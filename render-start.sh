@@ -11,8 +11,22 @@ if [ -z "$DATABASE_URL" ]; then
     exit 1
 fi
 
+# Ensure we are in the project root (where alembic.ini is)
+if [ -f "../alembic.ini" ]; then
+    echo "Changing to project root directory..."
+    cd ..
+fi
+
+echo "Current working directory: $(pwd)"
+export PYTHONPATH=$PYTHONPATH:$(pwd)
+
+# Verify Alembic configuration exists
+if [ ! -f "alembic.ini" ]; then
+    echo "ERROR: alembic.ini not found in $(pwd)"
+    exit 1
+fi
+
 echo "DATABASE_URL is set, proceeding with migrations..."
-echo "Working directory: $(pwd)"
 echo "DATABASE_URL: ${DATABASE_URL:0:20}..."
 
 # Check if we need to run migrations
@@ -38,9 +52,7 @@ DROP TYPE IF EXISTS transactiontype CASCADE;
 EOF
     echo "Cleanup completed"
 
-
-
-    # Run migrations from the parent directory
+    # Run migrations
     echo "Running: alembic upgrade head"
     alembic upgrade head
 
@@ -51,8 +63,6 @@ EOF
         echo "This is a critical error - the application cannot start without database tables"
         exit 1
     fi
-
-
 fi
 
 # Start the application

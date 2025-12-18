@@ -89,7 +89,7 @@ pidfile=/tmp/supervisord.pid
 loglevel=info
 
 [program:backend]
-command=uvicorn backend.main:app --host 0.0.0.0 --port %(ENV_PORT)s --workers 2
+command=uvicorn backend.main:app --host 0.0.0.0 --port %(ENV_PORT)s --workers 1
 directory=/opt/render/project/src
 autostart=true
 autorestart=true
@@ -100,7 +100,7 @@ stderr_logfile_maxbytes=0
 environment=PYTHONPATH="/opt/render/project/src:/opt/render/project/src/backend"
 
 [program:worker]
-command=celery -A worker.celery_app worker --loglevel=info --concurrency=2
+command=celery -A worker.celery_app worker --loglevel=info --concurrency=1
 directory=/opt/render/project/src
 autostart=true
 autorestart=true
