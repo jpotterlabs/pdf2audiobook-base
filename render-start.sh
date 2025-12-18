@@ -38,8 +38,7 @@ DROP TYPE IF EXISTS transactiontype CASCADE;
 EOF
     echo "Cleanup completed"
 
-    # Change to parent directory where alembic.ini is located
-    cd ..
+
 
     # Run migrations from the parent directory
     echo "Running: alembic upgrade head"
@@ -53,10 +52,10 @@ EOF
         exit 1
     fi
 
-    # Change back to backend directory
-    cd backend
+
 fi
 
 # Start the application
 echo "Starting FastAPI application..."
-exec uv run uvicorn backend.main:app --host 0.0.0.0 --port $PORT --workers 2
+# Use 1 worker to fit within Render's 512MB memory limit
+exec uv run uvicorn backend.main:app --host 0.0.0.0 --port $PORT --workers 1
