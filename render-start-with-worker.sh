@@ -79,9 +79,18 @@ if ! command -v supervisord &> /dev/null; then
     pip install supervisor
 fi
 
+# Determine command prefix based on .venv existence
+CMD_PREFIX=""
+if [ -d "/opt/render/project/src/.venv" ]; then
+    CMD_PREFIX="/opt/render/project/src/.venv/bin/"
+    echo "✅ Found .venv, using prefix: $CMD_PREFIX"
+else
+    echo "⚠️ .venv not found, assuming binaries are in PATH"
+fi
+
 # Create supervisor configuration
 echo "📝 Creating supervisor configuration..."
-cat > /tmp/supervisord.conf << 'SUPERVISOR_EOF'
+cat > /tmp/supervisord.conf << SUPERVISOR_EOF
 [supervisord]
 nodaemon=true
 logfile=/tmp/supervisord.log
@@ -89,7 +98,7 @@ pidfile=/tmp/supervisord.pid
 loglevel=info
 
 [program:backend]
-command=uvicorn backend.main:app --host 0.0.0.0 --port %(ENV_PORT)s --workers 1
+command=${CMD_PREFIX}uvicorn backend.main:app --host 0.0.0.0 --port %(ENV_PORT)s --workers 1
 directory=/opt/render/project/src
 autostart=true
 autorestart=true
@@ -100,7 +109,7 @@ stderr_logfile_maxbytes=0
 environment=PYTHONPATH="/opt/render/project/src:/opt/render/project/src/backend"
 
 [program:worker]
-command=celery -A worker.celery_app worker --loglevel=info --concurrency=1
+command=${CMD_PREFIX}celery -A worker.celery_app worker --loglevel=info --concurrency=1
 directory=/opt/render/project/src
 autostart=true
 autorestart=true

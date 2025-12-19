@@ -1,6 +1,8 @@
-'use client'
-
 import { SignIn } from '@clerk/nextjs'
+
+export function generateStaticParams() {
+  return []
+}
 
 export default function SignInPage() {
   return (
