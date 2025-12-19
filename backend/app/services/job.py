@@ -69,6 +69,7 @@ class JobService:
         status: JobStatus,
         progress: int = None,
         error_message: str = None,
+        estimated_cost: float = None,
     ):
         job = self.db.query(Job).filter(Job.id == job_id).first()
         if not job:
@@ -81,6 +82,9 @@ class JobService:
 
         if error_message is not None:
             job.error_message = error_message
+
+        if estimated_cost is not None:
+            job.estimated_cost = estimated_cost
 
         if status == JobStatus.PROCESSING and not job.started_at:
             job.started_at = datetime.now()

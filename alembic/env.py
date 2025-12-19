@@ -39,7 +39,7 @@ def check_and_create_enums(connection):
         "producttype": ["subscription", "one_time"],
         "subscriptiontier": ["free", "pro", "enterprise"],
         "voiceprovider": ["openai", "google", "aws_polly", "azure", "eleven_labs"],
-        "conversionmode": ["full", "summary_explanation"],
+        "conversionmode": ["full", "summary", "explanation", "summary_explanation"],
         "jobstatus": ["pending", "processing", "completed", "failed"],
     }
 

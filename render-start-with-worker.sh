@@ -27,47 +27,74 @@ echo "✅ Environment variables verified"
 
 # Check database connection and create tables if needed
 echo "🔍 Checking database connection..."
-python3 << 'EOF'
+
+MAX_RETRIES=5
+RETRY_DELAY=5
+DATABASE_STATUS="ERROR"
+
+for i in $(seq 1 $MAX_RETRIES); do
+    RAW_STATUS=$(python3 << 'EOF'
 import sys
 import os
+import warnings
+from sqlalchemy import create_engine, inspect, text
+
+# Suppress warnings to keep stdout clean for status detection
+warnings.filterwarnings("ignore")
 
 # Add backend to path
 sys.path.insert(0, '/opt/render/project/src/backend')
 sys.path.insert(0, '/opt/render/project/src')
 
-from app.core.database import engine
-from app.models import Base
-from sqlalchemy import inspect, text
-
 try:
-    # Test connection
+    url = os.environ.get('DATABASE_URL')
+    if not url:
+        print("STATUS:MISSING")
+        sys.exit(0)
+    
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+        
+    engine = create_engine(url, connect_args={'connect_timeout': 5})
+    
     with engine.connect() as conn:
         conn.execute(text('SELECT 1'))
-    print('✅ Database connection successful')
-
-    # Check if tables exist
+    
     inspector = inspect(engine)
     tables = inspector.get_table_names()
 
     if 'users' in tables:
-        print(f"✅ Database tables already exist ({len(tables)} tables)")
+        print("STATUS:READY")
     else:
-        print("📦 Creating database tables...")
-        Base.metadata.create_all(bind=engine)
-
-        inspector = inspect(engine)
-        tables = inspector.get_table_names()
-        print(f"✅ Created {len(tables)} tables successfully")
-
+        print("STATUS:MIGRATE")
 except Exception as e:
-    print(f"❌ Error setting up database: {e}")
-    import traceback
-    traceback.print_exc()
+    # Print error but include the error prefix for bash to catch
+    print(f"STATUS:ERROR: {e}")
     sys.exit(1)
 EOF
+)
+    # Extract status using grep/sed to be safe from extra library output
+    DATABASE_STATUS=$(echo "$RAW_STATUS" | grep "STATUS:" | tail -n 1 | cut -d':' -f2-)
+    
+    if [[ "$DATABASE_STATUS" == "READY" || "$DATABASE_STATUS" == "MIGRATE" || "$DATABASE_STATUS" == "MISSING" ]]; then
+        break
+    fi
+    
+    echo "⚠️ Connection attempt $i failed ($DATABASE_STATUS). Retrying in ${RETRY_DELAY}s..."
+    sleep $RETRY_DELAY
+done
 
-if [ $? -ne 0 ]; then
-    echo "❌ Database setup failed"
+if [[ "$DATABASE_STATUS" == "MIGRATE" ]]; then
+    echo "📦 First-time setup: Running database migrations..."
+    export PYTHONPATH=$PYTHONPATH:/opt/render/project/src/backend:/opt/render/project/src
+    alembic upgrade head
+elif [[ "$DATABASE_STATUS" == "READY" ]]; then
+    echo "✅ Database tables already exist"
+elif [[ "$DATABASE_STATUS" == "MISSING" ]]; then
+    echo "❌ ERROR: DATABASE_URL is not set"
+    exit 1
+elif [[ "$DATABASE_STATUS" == ERROR* ]]; then
+    echo "❌ $DATABASE_STATUS"
     exit 1
 fi
 

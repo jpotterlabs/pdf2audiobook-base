@@ -59,7 +59,9 @@ class ProductType(str, enum.Enum):
 
 class ConversionMode(str, enum.Enum):
     FULL = "full"
-    SUMMARY_EXPLANATION = "summary_explanation"
+    SUMMARY = "summary"
+    EXPLANATION = "explanation"
+    SUMMARY_EXPLANATION = "summary_explanation"  # Deprecated soon but keeping for compatibility
 
 
 class User(Base):
@@ -122,6 +124,7 @@ class Job(Base):
         create_enum_type("conversionmode", ConversionMode, Base.metadata),
         default=ConversionMode.FULL,
     )
+    estimated_cost = Column(Numeric(10, 6), default=0.0)
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())

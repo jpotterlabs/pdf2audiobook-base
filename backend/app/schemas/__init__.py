@@ -42,6 +42,8 @@ class ConversionMode(str, Enum):
     """Enumeration for PDF conversion modes."""
 
     FULL = "full"
+    SUMMARY = "summary"
+    EXPLANATION = "explanation"
     SUMMARY_EXPLANATION = "summary_explanation"
 
 
@@ -179,6 +181,8 @@ class JobUpdate(BaseModel):
         None, description="The public URL for the generated audio file."
     )
 
+    estimated_cost: Optional[float] = Field(None, description="The estimated cost of the job.")
+
 
 class Job(JobBase):
     """Schema for representing a job, returned from the API."""
@@ -218,6 +222,7 @@ class Job(JobBase):
     error_message: Optional[str] = Field(
         None, description="An error message if the job failed."
     )
+    estimated_cost: float = Field(0.0, description="The estimated cost of the job.")
     created_at: datetime = Field(..., description="Timestamp when the job was created.")
     started_at: Optional[datetime] = Field(
         None, description="Timestamp when processing started."

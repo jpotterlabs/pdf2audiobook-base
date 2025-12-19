@@ -54,6 +54,20 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: Optional[str] = None
     LLM_MODEL: str = "google/gemini-2.0-flash-001"
 
+    # Google TTS Voices
+    GOOGLE_VOICE_US_FEMALE_STD: str = "en-US-Wavenet-C"
+    GOOGLE_VOICE_US_MALE_STD: str = "en-US-Wavenet-D"
+    GOOGLE_VOICE_GB_FEMALE_STD: str = "en-GB-Wavenet-A"
+    GOOGLE_VOICE_GB_MALE_STD: str = "en-GB-Wavenet-B"
+    GOOGLE_VOICE_US_FEMALE_PREMIUM: str = "en-US-Studio-O"
+    GOOGLE_VOICE_US_MALE_PREMIUM: str = "en-US-Studio-Q"
+    GOOGLE_VOICE_GB_FEMALE_PREMIUM: str = "en-GB-Studio-B"
+    GOOGLE_VOICE_GB_MALE_PREMIUM: str = "en-GB-Studio-C"
+
+    # Google TTS Costs (per 1M characters)
+    GOOGLE_TTS_COST_WAVENET: float = 4.0
+    GOOGLE_TTS_COST_CHIRP: float = 30.0
+
     # File upload limits
     MAX_FILE_SIZE_MB: int = 50
     ALLOWED_FILE_TYPES: Any = ["application/pdf"]
@@ -86,6 +100,13 @@ class Settings(BaseSettings):
                 env_settings,  # Environment variables
                 file_secret_settings,  # .env file
             )
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def fix_postgres_prefix(cls, v: Any) -> Any:
+        if isinstance(v, str) and v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql://", 1)
+        return v
 
     @property
     def is_production(self) -> bool:

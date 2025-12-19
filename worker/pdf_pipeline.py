@@ -49,11 +49,26 @@ class OpenAITTS(TTSProvider):
 class GoogleTTS(TTSProvider):
     def __init__(self):
         self.client = texttospeech.TextToSpeechClient()
+        self.voice_mapping = {
+            "us_female_std": (settings.GOOGLE_VOICE_US_FEMALE_STD, "en-US"),
+            "us_male_std": (settings.GOOGLE_VOICE_US_MALE_STD, "en-US"),
+            "gb_female_std": (settings.GOOGLE_VOICE_GB_FEMALE_STD, "en-GB"),
+            "gb_male_std": (settings.GOOGLE_VOICE_GB_MALE_STD, "en-GB"),
+            "us_female_premium": (settings.GOOGLE_VOICE_US_FEMALE_PREMIUM, "en-US"),
+            "us_male_premium": (settings.GOOGLE_VOICE_US_MALE_PREMIUM, "en-US"),
+            "gb_female_premium": (settings.GOOGLE_VOICE_GB_FEMALE_PREMIUM, "en-GB"),
+            "gb_male_premium": (settings.GOOGLE_VOICE_GB_MALE_PREMIUM, "en-GB"),
+        }
 
     def text_to_audio(self, text: str, voice_id: str, speed: float) -> bytes:
         synthesis_input = texttospeech.SynthesisInput(text=text)
+        
+        voice_name, lang_code = self.voice_mapping.get(
+            voice_id, ("en-US-Neural2-D", "en-US")
+        )
+        
         voice = texttospeech.VoiceSelectionParams(
-            language_code="en-US", name=voice_id or "en-US-Neural2-D"
+            language_code=lang_code, name=voice_name
         )
         audio_config = texttospeech.AudioConfig(
             audio_encoding=texttospeech.AudioEncoding.MP3, speaking_rate=speed
@@ -187,7 +202,7 @@ class PDFToAudioPipeline:
         include_summary: bool = False,
         conversion_mode: str = "full",
         progress_callback: Optional[Callable[[int], None]] = None,
-    ) -> bytes:
+    ) -> tuple[bytes, float]:
         try:
             if progress_callback:
                 progress_callback(5)
@@ -227,25 +242,59 @@ class PDFToAudioPipeline:
                 progress_callback(95)
             full_audio_data = self._assemble_audio_chapters(chapter_audio_segments)
 
+            # Calculate estimated cost
+            estimated_cost = self._calculate_cost(
+                voice_provider, voice_type, final_text
+            )
+
             if progress_callback:
                 progress_callback(100)
-            return full_audio_data
+            return full_audio_data, estimated_cost
 
         except Exception as e:
             raise Exception(f"PDF processing failed: {str(e)}")
 
     def _get_final_text(self, cleaned_text, include_summary, conversion_mode, progress_callback):
-        if conversion_mode == "summary_explanation":
+        if conversion_mode == "summary":
             if progress_callback:
                 progress_callback(25)
-            explanation = self._generate_concept_explanation(cleaned_text)
-            return explanation
-        elif include_summary:
+            return self._generate_summary(cleaned_text)
+        elif conversion_mode == "explanation":
+            if progress_callback:
+                progress_callback(25)
+            return self._generate_concept_explanation(cleaned_text)
+        elif conversion_mode == "summary_explanation":
+             # Legacy fallback
+            if progress_callback:
+                progress_callback(25)
+            return self._generate_concept_explanation(cleaned_text)
+        
+        # Mode is FULL or anything else
+        if include_summary:
             if progress_callback:
                 progress_callback(25)
             summary = self._generate_summary(cleaned_text)
             return f"Summary of the document: {summary}\n\n{cleaned_text}"
         return cleaned_text
+
+    def _calculate_cost(self, provider: str, voice_type: str, text: str) -> float:
+        char_count = len(text)
+        cost = 0.0
+
+        if provider == "google":
+            if "premium" in voice_type.lower():
+                cost = (char_count / 1_000_000) * settings.GOOGLE_TTS_COST_CHIRP
+            else:
+                cost = (char_count / 1_000_000) * settings.GOOGLE_TTS_COST_WAVENET
+        elif provider == "openai":
+            # OpenAI is flat $15 per 1M characters for tts-1
+            cost = (char_count / 1_000_000) * 15.0
+        
+        # Add a placeholder for LLM cost (Summary/Explanation)
+        # Assuming Flash 2.0 is extremely cheap, we'll just add a tiny flat fee or ignore it for now
+        # until token counting is implemented.
+        
+        return round(cost, 6)
 
     def _extract_text(self, pdf_path: str) -> str:
         text = ""

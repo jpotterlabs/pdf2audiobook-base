@@ -17,6 +17,7 @@ export default function UploadPage() {
   const [voiceType, setVoiceType] = useState('alloy')
   const [readingSpeed, setReadingSpeed] = useState(1.0)
   const [includeSummary, setIncludeSummary] = useState(true)
+  const [conversionMode, setConversionMode] = useState('full')
   const { getToken } = useAuth()
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -51,7 +52,7 @@ export default function UploadPage() {
       formData.append('voice_type', voiceType)
       formData.append('reading_speed', readingSpeed.toString())
       formData.append('include_summary', includeSummary.toString())
-      formData.append('conversion_mode', 'full')
+      formData.append('conversion_mode', conversionMode)
 
       // Simulate progress
       const progressInterval = setInterval(() => {
@@ -218,6 +219,25 @@ export default function UploadPage() {
                     <option value="nova">Nova (Femme)</option>
                     <option value="shimmer">Shimmer (Femme)</option>
                   </select>
+                ) : voiceProvider === 'google' ? (
+                  <select
+                    value={voiceType}
+                    onChange={(e) => setVoiceType(e.target.value)}
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-900"
+                  >
+                    <optgroup label="Standard (Wavenet)">
+                      <option value="us_female_std">US Female (Standard)</option>
+                      <option value="us_male_std">US Male (Standard)</option>
+                      <option value="gb_female_std">UK Female (Standard)</option>
+                      <option value="gb_male_std">UK Male (Standard)</option>
+                    </optgroup>
+                    <optgroup label="Premium (Chirp/Studio)">
+                      <option value="us_female_premium">US Female (Premium)</option>
+                      <option value="us_male_premium">US Male (Premium)</option>
+                      <option value="gb_female_premium">UK Female (Premium)</option>
+                      <option value="gb_male_premium">UK Male (Premium)</option>
+                    </optgroup>
+                  </select>
                 ) : (
                   <input
                     type="text"
@@ -245,22 +265,51 @@ export default function UploadPage() {
                 />
               </div>
 
-              {/* Include Summary */}
-              <div className="flex items-center">
-                <input
-                  id="include-summary"
-                  type="checkbox"
-                  checked={includeSummary}
-                  onChange={(e) => setIncludeSummary(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label
-                  htmlFor="include-summary"
-                  className="ml-2 block text-sm text-gray-900"
-                >
-                  Include AI-generated summary at the beginning
+              {/* Conversion Mode */}
+              <div className="md:col-span-2 space-y-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  Conversion Mode
                 </label>
+                <div className="flex flex-wrap gap-4">
+                  {[
+                    { id: 'full', label: 'Word-for-Word', desc: 'Convert the entire document text' },
+                    { id: 'summary', label: 'Summary Only', desc: 'Convert an AI-generated summary' },
+                    { id: 'explanation', label: 'Concept Explanation', desc: 'Explain core concepts in simple terms' }
+                  ].map((mode) => (
+                    <label key={mode.id} className={`flex-1 min-w-[200px] cursor-pointer border rounded-lg p-3 transition-all ${conversionMode === mode.id ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-gray-200 hover:border-gray-300'}`}>
+                      <input
+                        type="radio"
+                        name="conversionMode"
+                        value={mode.id}
+                        checked={conversionMode === mode.id}
+                        onChange={(e) => setConversionMode(e.target.value)}
+                        className="sr-only"
+                      />
+                      <p className="font-semibold text-gray-900">{mode.label}</p>
+                      <p className="text-xs text-gray-500 mt-1">{mode.desc}</p>
+                    </label>
+                  ))}
+                </div>
               </div>
+
+              {/* Include Summary (Only show if not in summary/explanation mode) */}
+              {conversionMode === 'full' && (
+                <div className="flex items-center md:col-span-2 mt-2">
+                  <input
+                    id="include-summary"
+                    type="checkbox"
+                    checked={includeSummary}
+                    onChange={(e) => setIncludeSummary(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label
+                    htmlFor="include-summary"
+                    className="ml-2 block text-sm text-gray-900"
+                  >
+                    Prepend AI-generated summary to the full audio
+                  </label>
+                </div>
+              )}
             </div>
           </div>
         )}

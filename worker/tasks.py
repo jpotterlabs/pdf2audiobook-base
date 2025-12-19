@@ -50,7 +50,7 @@ def process_pdf_task(self, job_id: int):
             pdf_file.write(pdf_data)
             pdf_path = pdf_file.name
 
-        audio_data = pipeline.process_pdf(
+        audio_data, estimated_cost = pipeline.process_pdf(
             pdf_path=pdf_path,
             voice_provider=job.voice_provider.value,
             voice_type=job.voice_type,
@@ -69,7 +69,9 @@ def process_pdf_task(self, job_id: int):
 
         job.audio_s3_key = audio_key
         job.audio_s3_url = audio_url
-        job_service.update_job_status(job_id, JobStatus.COMPLETED, 100)
+        job_service.update_job_status(
+            job_id, JobStatus.COMPLETED, 100, estimated_cost=estimated_cost
+        )
 
         logger.info(f"Successfully processed job {job_id}")
         return {"status": "completed", "job_id": job_id, "audio_url": audio_url}

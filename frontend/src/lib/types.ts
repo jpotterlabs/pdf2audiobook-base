@@ -35,6 +35,8 @@ export enum VoiceProvider {
 
 export enum ConversionMode {
   FULL = 'full',
+  SUMMARY = 'summary',
+  EXPLANATION = 'explanation',
   SUMMARY_EXPLANATION = 'summary_explanation',
 }
 
@@ -49,6 +51,7 @@ export interface Job {
   status: JobStatus
   progress_percentage: number
   error_message: string | null
+  estimated_cost: number
   voice_provider: VoiceProvider
   voice_type: string
   reading_speed: number

@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { FileText, Upload, Play, CheckCircle, Users, Zap } from 'lucide-react'
 
-export const dynamic = 'force-dynamic'
 
 export default function Home() {
   return (
