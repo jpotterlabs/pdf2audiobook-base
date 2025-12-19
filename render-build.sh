@@ -7,7 +7,7 @@ echo "🚀 Starting PDF2Audiobook backend build for Render..."
 echo "📦 Installing dependencies..."
 if command -v uv &> /dev/null; then
     echo "Using uv for dependency installation..."
-    uv sync --frozen --no-install-project
+    uv sync --no-install-project
 else
     echo "uv not found, using pip..."
     pip install -r requirements.txt
