@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
 
     # CORS - More restrictive defaults
-    ALLOWED_HOSTS: List[str] = []
+    ALLOWED_HOSTS: Any = []
 
     # AWS S3
     AWS_ACCESS_KEY_ID: Optional[str] = None
@@ -56,7 +56,7 @@ class Settings(BaseSettings):
 
     # File upload limits
     MAX_FILE_SIZE_MB: int = 50
-    ALLOWED_FILE_TYPES: List[str] = ["application/pdf"]
+    ALLOWED_FILE_TYPES: Any = ["application/pdf"]
 
     # Rate limiting
     RATE_LIMIT_REQUESTS: int = 100
