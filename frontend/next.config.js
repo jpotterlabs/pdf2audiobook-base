@@ -1,44 +1,40 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export', // Enable static export for Render Static Site
-  // Enable experimental features if needed
-  experimental: {
-    // Enable if using app directory features
-  },
+  // No output: 'export' for web service
 
   // Image optimization settings
   images: {
-    domains: ['localhost'], // Add your production domain here
-    unoptimized: true, // Required for static export
+    domains: ['localhost'],
+    unoptimized: false,
   },
 
-
-  // Reduce dev-time memory usage by avoiding watching heavy root-level folders
-  // and backend-related artifacts that are irrelevant to the Next.js app.
-  webpackDevMiddleware: (config) => {
-    if (config.watchOptions && !config.watchOptions.ignored) {
-      config.watchOptions.ignored = []
-    }
-
-    const ignored = config.watchOptions?.ignored || []
-
-    const heavyGlobs = [
-      '../backend/**',
-      '../worker/**',
-      '../logs/**',
-      '../.venv/**',
-      '../venv/**',
-      '../dev.db',
-      '../test.db',
-      '../output.mp3',
-      '../server.log',
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+        ],
+      },
     ]
+  },
 
-    config.watchOptions.ignored = Array.isArray(ignored)
-      ? [...ignored, ...heavyGlobs]
-      : [ignored, ...heavyGlobs]
-
-    return config
+  async rewrites() {
+    return [
+      // API rewrites are handled by environment variables in this app, 
+      // but we keep the structure for future flexibility.
+    ]
   },
 }
 
