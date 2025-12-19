@@ -1,6 +1,11 @@
 import os
+import sys
 import tempfile
 from typing import Optional, Callable, List
+
+# Add backend to path for settings access
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "backend"))
+from app.core.config import settings
 import fitz  # PyMuPDF
 from pdf2image import convert_from_path
 import pytesseract
