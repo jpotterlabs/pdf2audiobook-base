@@ -108,7 +108,7 @@ class StorageService:
                 Params={'Bucket': self.bucket_name, 'Key': key},
                 ExpiresIn=expiration
             )
-            self.logger.debug(f"Generated presigned URL for key {key}: {url}")
+            self.logger.info(f"Generated presigned URL for key {key}: {url}")
             return url
             
         except ClientError as e:
