@@ -108,6 +108,17 @@ class Settings(BaseSettings):
             return v.replace("postgres://", "postgresql://", 1)
         return v
 
+    @field_validator("CLERK_PEM_PUBLIC_KEY", mode="before")
+    @classmethod
+    def fix_pem_formatting(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            # Replace literal "\n" characters with actual newlines
+            v = v.replace("\\n", "\n")
+            # Ensure it has the headers/footers if missing
+            if "BEGIN PUBLIC KEY" not in v:
+                v = f"-----BEGIN PUBLIC KEY-----\n{v}\n-----END PUBLIC KEY-----"
+        return v
+
     @property
     def is_production(self) -> bool:
         """Check if running in production environment."""

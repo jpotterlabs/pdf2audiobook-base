@@ -59,10 +59,18 @@ def verify_clerk_token(token: str) -> dict:
         }
         
         return user_data
-    except JWTError:
+    except JWTError as e:
+        print(f"JWT Verification Error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
+            detail=f"Could not validate credentials: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except Exception as e:
+        print(f"Unexpected Auth Error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unexpected authentication error",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
