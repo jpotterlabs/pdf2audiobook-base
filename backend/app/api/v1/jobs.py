@@ -240,4 +240,5 @@ async def get_job_status(
         "progress_percentage": job.progress_percentage,
         "error_message": job.error_message,
         "audio_url": audio_url,
+        "estimated_cost": job.estimated_cost,
     }
