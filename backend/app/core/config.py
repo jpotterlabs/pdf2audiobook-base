@@ -117,6 +117,10 @@ class Settings(BaseSettings):
             # Ensure it has the headers/footers if missing
             if "BEGIN PUBLIC KEY" not in v:
                 v = f"-----BEGIN PUBLIC KEY-----\n{v}\n-----END PUBLIC KEY-----"
+            
+            # Diagnostic info (safe)
+            print(f"DEBUG: CLERK_PEM_PUBLIC_KEY structure: length={len(v)}, "
+                  f"starts_with='{v[:20]}...', ends_with='...{v[-20:]}'")
         return v
 
     @property
