@@ -169,22 +169,31 @@ class Settings(BaseSettings):
 
     def setup_google_credentials(self):
         """Helper to write Google Credentials from JSON to file if provided."""
-        # IF GOOGLE_APPLICATION_CREDENTIALS is already set (e.g. via Render Secret File),
-        # we should respect it and NOT overwrite it with a temporary file.
-        if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
-            print(f"INFO: Using existing GOOGLE_APPLICATION_CREDENTIALS path: {os.getenv('GOOGLE_APPLICATION_CREDENTIALS')}")
-            return
+        from loguru import logger
+        
+        env_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+        logger.info(f"Checking credentials... env_var='{env_path}'")
+        
+        if env_path:
+            if os.path.exists(env_path):
+                logger.info(f"✅ Using valid existing path: {env_path}")
+                return
+            else:
+                logger.warning(f"⚠️ GOOGLE_APPLICATION_CREDENTIALS is set to {env_path} but FILE NOT FOUND")
 
-        if self.GOOGLE_APPLICATION_CREDENTIALS_JSON and self.GOOGLE_APPLICATION_CREDENTIALS_JSON.strip():
-             # Use a fixed path or temp file
+        json_text = self.GOOGLE_APPLICATION_CREDENTIALS_JSON
+        if json_text and json_text.strip():
+             logger.info(f"🛠 Manual setup trigger detected (JSON length: {len(json_text)})")
              cred_path = "/tmp/google_credentials.json"
              try:
                  with open(cred_path, "w") as f:
-                     f.write(self.GOOGLE_APPLICATION_CREDENTIALS_JSON)
+                     f.write(json_text)
                  os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_path
-                 print(f"INFO: Successfully wrote Google Application Credentials to {cred_path}")
+                 logger.info(f"✅ Successfully wrote Google Application Credentials to {cred_path}")
              except Exception as e:
-                 print(f"ERROR: Failed to write Google Credentials: {e}")
+                 logger.error(f"❌ Failed to write Google Credentials: {e}")
+        else:
+             logger.info("ℹ️ No Google credentials configuration detected (skipping setup)")
 
 settings = Settings()
 settings.setup_google_credentials()
