@@ -53,16 +53,11 @@ def verify_clerk_token(token: str) -> dict:
             "verify_aud": True if payload_unverified.get("aud") else False
         }
         
-        # Dynamically set audience to None if verifying a token without an aud claim
-        audience_arg = settings.CLERK_JWT_AUDIENCE
-        if not payload_unverified.get("aud"):
-            audience_arg = None
-
         payload = jwt.decode(
             token,
             key=settings.CLERK_PEM_PUBLIC_KEY,
             algorithms=["RS256"],
-            audience=audience_arg,
+            audience=settings.CLERK_JWT_AUDIENCE,
             issuer=settings.CLERK_JWT_ISSUER,
             options=decode_options
         )
