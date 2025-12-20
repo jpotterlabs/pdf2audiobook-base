@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     AWS_ACCESS_KEY_ID: Optional[str] = None
     AWS_SECRET_ACCESS_KEY: Optional[str] = None
     AWS_REGION: str = "us-east-1"
+    AWS_ENDPOINT_URL: Optional[str] = None
     S3_BUCKET_NAME: Optional[str] = None
 
     # Authentication (Clerk)
