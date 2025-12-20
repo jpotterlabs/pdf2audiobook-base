@@ -112,10 +112,14 @@ class Settings(BaseSettings):
     @classmethod
     def fix_pem_formatting(cls, v: Any) -> Any:
         if isinstance(v, str):
+            # Strip quotes and whitespace that might be added by Render/Env
+            v = v.strip().strip('"').strip("'").strip()
+            
             # Replace literal "\n" characters with actual newlines
             v = v.replace("\\n", "\n")
+            
             # Ensure it has the headers/footers if missing
-            if "BEGIN PUBLIC KEY" not in v:
+            if "-----BEGIN PUBLIC KEY-----" not in v:
                 v = f"-----BEGIN PUBLIC KEY-----\n{v}\n-----END PUBLIC KEY-----"
             
             # Diagnostic info (safe)
