@@ -193,13 +193,13 @@ export default function UploadPage() {
                   onChange={(e) => setVoiceType(e.target.value)}
                   className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-900"
                 >
-                  <optgroup label="Standard (Wavenet)">
+                  <optgroup label="Standard Voices">
                     <option value="us_female_std">US Female (Standard)</option>
                     <option value="us_male_std">US Male (Standard)</option>
                     <option value="gb_female_std">UK Female (Standard)</option>
                     <option value="gb_male_std">UK Male (Standard)</option>
                   </optgroup>
-                  <optgroup label="Premium (Chirp/Studio)">
+                  <optgroup label="Premium (HD) Voices">
                     <option value="us_female_premium">US Female (Premium)</option>
                     <option value="us_male_premium">US Male (Premium)</option>
                     <option value="gb_female_premium">UK Female (Premium)</option>
