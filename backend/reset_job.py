@@ -9,6 +9,11 @@ if job:
     job.retry_count = 0
     job.error_message = None
     db.commit()
+    
+    # Re-queue the task
+    from app.worker.tasks import process_pdf_task
+    print(f"Re-queuing Job {job.id} to Celery...")
+    process_pdf_task.delay(job.id)
     print("Success")
 else:
     print("Job 1 not found or not in FAILED state. Skipping reset.")
