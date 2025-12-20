@@ -339,6 +339,62 @@ function JobDetailContent() {
                 full-text narration for a faithful audiobook experience.
               </p>
             </div>
+
+            {/* Debug Information (Development Only) */}
+            {process.env.NEXT_PUBLIC_ENVIRONMENT === 'development' && (
+              <div className="mt-10 pt-6 border-t border-slate-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Debug Metrics & Metadata
+                  </h3>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 overflow-hidden">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[10px] sm:text-xs">
+                    <div className="space-y-3">
+                      <div>
+                        <span className="text-slate-500 block mb-0.5">Job ID</span>
+                        <code className="text-slate-900 bg-slate-200/50 px-1.5 py-0.5 rounded">{job.id}</code>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block mb-0.5">Estimated Cost</span>
+                        <span className="font-mono text-emerald-700 font-semibold">
+                          ${job.estimated_cost?.toFixed(3) || '0.000'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block mb-0.5">Processing Duration</span>
+                        <span className="text-slate-700">
+                          {job.started_at && job.completed_at
+                            ? `${((new Date(job.completed_at).getTime() - new Date(job.started_at).getTime()) / 1000).toFixed(1)}s`
+                            : job.started_at
+                              ? 'In progress...'
+                              : 'Waiting...'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <span className="text-slate-500 block mb-0.5">PDF S3 Key</span>
+                        <code className="text-[9px] text-slate-600 break-all">{job.pdf_s3_key}</code>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block mb-0.5">Audio S3 Key</span>
+                        <code className="text-[9px] text-slate-600 break-all">{job.audio_s3_key || 'Not generated'}</code>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block mb-0.5">Timestamps</span>
+                        <div className="space-y-1 text-[9px] text-slate-600">
+                          <div>Created: {new Date(job.created_at).toISOString()}</div>
+                          {job.started_at && <div>Started: {new Date(job.started_at).toISOString()}</div>}
+                          {job.completed_at && <div>Finished: {new Date(job.completed_at).toISOString()}</div>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </SignedIn>
