@@ -163,4 +163,21 @@ class Settings(BaseSettings):
                 raise ValueError("SECRET_KEY must be changed from default value in production")
 
 
+    # Google Cloud Credentials
+    GOOGLE_APPLICATION_CREDENTIALS_JSON: Optional[str] = None
+
+    def setup_google_credentials(self):
+        """Helper to write Google Credentials from JSON to file if provided."""
+        if self.GOOGLE_APPLICATION_CREDENTIALS_JSON:
+             # Use a fixed path or temp file
+             cred_path = "/tmp/google_credentials.json"
+             try:
+                 with open(cred_path, "w") as f:
+                     f.write(self.GOOGLE_APPLICATION_CREDENTIALS_JSON)
+                 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_path
+                 print(f"INFO: Successfully wrote Google Application Credentials to {cred_path}")
+             except Exception as e:
+                 print(f"ERROR: Failed to write Google Credentials: {e}")
+
 settings = Settings()
+settings.setup_google_credentials()
