@@ -111,8 +111,10 @@ class JobService:
             return True
 
         # Check subscription limits
-        if user.subscription_tier.value == "free":
-            # Free tier: 2 jobs per month
+        if user.subscription_tier.value.lower() == "free":
+            # Free tier limit
+            from app.core.config import settings
+            limit = settings.FREE_TIER_JOBS_LIMIT
             monthly_jobs = (
                 self.db.query(Job)
                     .filter(
@@ -121,7 +123,7 @@ class JobService:
                     )
                     .count()
             )
-            return monthly_jobs < 2
+            return monthly_jobs < limit
 
         elif user.subscription_tier.value == "pro":
             # Pro tier: 50 jobs per month

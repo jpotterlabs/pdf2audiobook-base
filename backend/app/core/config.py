@@ -72,6 +72,7 @@ class Settings(BaseSettings):
     # File upload limits
     MAX_FILE_SIZE_MB: int = 50
     ALLOWED_FILE_TYPES: Any = ["application/pdf"]
+    FREE_TIER_JOBS_LIMIT: int = 50
 
     # Rate limiting
     RATE_LIMIT_REQUESTS: int = 100
