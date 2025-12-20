@@ -169,7 +169,13 @@ class Settings(BaseSettings):
 
     def setup_google_credentials(self):
         """Helper to write Google Credentials from JSON to file if provided."""
-        if self.GOOGLE_APPLICATION_CREDENTIALS_JSON:
+        # IF GOOGLE_APPLICATION_CREDENTIALS is already set (e.g. via Render Secret File),
+        # we should respect it and NOT overwrite it with a temporary file.
+        if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+            print(f"INFO: Using existing GOOGLE_APPLICATION_CREDENTIALS path: {os.getenv('GOOGLE_APPLICATION_CREDENTIALS')}")
+            return
+
+        if self.GOOGLE_APPLICATION_CREDENTIALS_JSON and self.GOOGLE_APPLICATION_CREDENTIALS_JSON.strip():
              # Use a fixed path or temp file
              cred_path = "/tmp/google_credentials.json"
              try:
