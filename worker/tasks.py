@@ -23,7 +23,17 @@ pipeline = PDFToAudioPipeline()
 
 from loguru import logger
 
-# ... (imports)
+# Diagnostic: Print voice env vars at startup
+logger.info("⚙️ Loading Google TTS Voice Configuration from Environment:")
+voice_vars = [
+    "GOOGLE_VOICE_US_FEMALE_STD", "GOOGLE_VOICE_US_MALE_STD",
+    "GOOGLE_VOICE_GB_FEMALE_STD", "GOOGLE_VOICE_GB_MALE_STD",
+    "GOOGLE_VOICE_US_FEMALE_PREMIUM", "GOOGLE_VOICE_US_MALE_PREMIUM",
+    "GOOGLE_VOICE_GB_FEMALE_PREMIUM", "GOOGLE_VOICE_GB_MALE_PREMIUM"
+]
+for var in voice_vars:
+    val = getattr(settings, var, "NOT SET")
+    logger.info(f"  {var} = '{val}'")
 
 
 @celery_app.task(bind=True)
