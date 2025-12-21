@@ -14,6 +14,7 @@ import openai
 from pydub import AudioSegment
 import io
 import re
+import random
 from abc import ABC, abstractmethod
 import base64
 
