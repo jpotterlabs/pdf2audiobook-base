@@ -68,6 +68,9 @@ class GoogleTTS(TTSProvider):
             voice_id, ("en-US-Neural2-D", "en-US")
         )
         
+        from loguru import logger
+        logger.info(f"🎤 Google TTS synthesis: voice_id='{voice_id}', actual_name='{voice_name}', lang='{lang_code}'")
+
         voice = texttospeech.VoiceSelectionParams(
             language_code=lang_code, name=voice_name
         )
@@ -204,6 +207,8 @@ class PDFToAudioPipeline:
         conversion_mode: str = "full",
         progress_callback: Optional[Callable[[int], None]] = None,
     ) -> tuple[bytes, float]:
+        from loguru import logger
+        logger.info(f"🚀 Starting PDF processing: provider='{voice_provider}', voice='{voice_type}', mode='{conversion_mode}', summary='{include_summary}'")
         try:
             if progress_callback:
                 progress_callback(5)
@@ -258,16 +263,15 @@ class PDFToAudioPipeline:
             raise Exception(f"PDF processing failed: {str(e)}")
 
     def _get_final_text(self, cleaned_text, include_summary, conversion_mode, progress_callback):
-        if conversion_mode == "summary":
+        from loguru import logger
+        mode = str(conversion_mode).lower()
+        logger.info(f"🔍 Determining final text for mode: '{mode}' (original: '{conversion_mode}')")
+
+        if mode == "summary":
             if progress_callback:
                 progress_callback(25)
             return self._generate_summary(cleaned_text)
-        elif conversion_mode == "explanation":
-            if progress_callback:
-                progress_callback(25)
-            return self._generate_concept_explanation(cleaned_text)
-        elif conversion_mode == "summary_explanation":
-             # Legacy fallback
+        elif mode in ["explanation", "summary_explanation"]:
             if progress_callback:
                 progress_callback(25)
             return self._generate_concept_explanation(cleaned_text)
@@ -394,6 +398,7 @@ class PDFToAudioPipeline:
             client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             model = "gpt-3.5-turbo"
 
+        logger.info(f"🤖 Calling LLM ({model}) for {system_prompt[:50]}...")
         for i in range(max_retries):
             try:
                 response = client.chat.completions.create(
