@@ -221,18 +221,20 @@ class PDFToAudioPipeline:
 
             if progress_callback:
                 progress_callback(35)
-            chapters = self._chapterize_text(final_text)
+            
+            # Smart chunking for TTS safety (Google has 5000 char limit)
+            chunks = self._chunk_text_for_tts(final_text)
 
             tts_provider = self.tts_manager.get_provider(voice_provider)
 
             chapter_audio_segments = []
-            for i, chapter_text in enumerate(chapters):
-                progress = 40 + int((i / len(chapters)) * 55)
+            for i, chunk in enumerate(chunks):
+                progress = 40 + int((i / len(chunks)) * 55)
                 if progress_callback:
                     progress_callback(progress)
 
                 audio_data = tts_provider.text_to_audio(
-                    chapter_text, voice_type, reading_speed
+                    chunk, voice_type, reading_speed
                 )
                 chapter_audio_segments.append(
                     AudioSegment.from_file(io.BytesIO(audio_data))
@@ -365,12 +367,13 @@ class PDFToAudioPipeline:
                     },
                     {"role": "user", "content": truncated_text},
                 ],
-                max_tokens=250,
+                max_tokens=500, # Increased for safer summaries
                 temperature=0.3,
             )
             return response.choices[0].message.content.strip()
         except Exception as e:
-            print(f"Summary generation error: {e}")
+            from loguru import logger
+            logger.warning(f"Summary generation error: {e}")
             return text[:500] + "..."
 
     def _generate_concept_explanation(self, text: str) -> str:
@@ -397,45 +400,62 @@ class PDFToAudioPipeline:
                     {
                         "role": "system",
                         "content": """Analyze the provided text and create a comprehensive explanation of its core concepts.
-                        Structure your response with clear section headings (like "CHAPTER 1: CONCEPT NAME") that will be used for chapterization.
                         Focus on explaining key ideas, methodologies, findings, and conclusions in a narrative form suitable for audio conversion.
                         Make the explanation educational and accessible, as if teaching the concepts to someone new to the topic.""",
                     },
                     {"role": "user", "content": truncated_text},
                 ],
-                max_tokens=2000,  # Longer output for comprehensive explanation
-                temperature=0.2,  # Lower temperature for more focused explanations
+                max_tokens=3000,
+                temperature=0.2,
             )
             return response.choices[0].message.content.strip()
         except Exception as e:
-            print(f"Concept explanation error: {e}")
+            from loguru import logger
+            logger.warning(f"Concept explanation error: {e}")
             # Fallback: generate a basic summary-style explanation
             return f"This document explores key concepts and ideas. {text[:1000]}... The main themes and conclusions are presented in a structured format suitable for understanding the core content."
 
-    def _chapterize_text(self, text: str, min_chapter_length_sentences=20) -> List[str]:
-        sentences = re.split(r"(?<=[.!?])\s+", text)
-        if not sentences:
+    def _chunk_text_for_tts(self, text: str, max_chars: int = 4500) -> List[str]:
+        """
+        Split text into chunks that are safe for TTS providers (e.g., Google's 5000 character limit).
+        Attempts to split at sentence boundaries (., !, ?) or at the last whitespace if no sentence boundary is found.
+        """
+        if not text:
+            return []
+        
+        if len(text) <= max_chars:
             return [text]
 
-        chapters = []
-        current_chapter = []
-        for sentence in sentences:
-            is_heading = bool(
-                re.match(r"^(CHAPTER|SECTION)\s+\d+", sentence, re.IGNORECASE)
-            ) or (
-                sentence.isupper() and len(sentence.split()) < 10 and len(sentence) > 5
-            )
+        chunks = []
+        while text:
+            if len(text) <= max_chars:
+                chunks.append(text)
+                break
 
-            if is_heading and len(current_chapter) >= min_chapter_length_sentences:
-                chapters.append(" ".join(current_chapter))
-                current_chapter = [sentence]
+            # Find the best split point within the max_chars limit
+            sub_text = text[:max_chars]
+            
+            # 1. Look for a sentence boundary within the last 500 chars of the limit
+            split_match = list(re.finditer(r'[.!?]\s+', sub_text))
+            if split_match:
+                split_point = split_match[-1].end()
             else:
-                current_chapter.append(sentence)
+                # 2. Look for ANY whitespace to avoid splitting words
+                split_match = list(re.finditer(r'\s+', sub_text))
+                if split_match:
+                    split_point = split_match[-1].end()
+                else:
+                    # 3. Hard cut if necessary
+                    split_point = max_chars
 
-        if current_chapter:
-            chapters.append(" ".join(current_chapter))
+            chunks.append(text[:split_point].strip())
+            text = text[split_point:].strip()
 
-        return chapters if chapters else [text]
+        return chunks
+
+    def _chapterize_text(self, text: str, min_chapter_length_sentences=20) -> List[str]:
+        # Legacy: keeping for backward compatibility if needed, but processing now uses _chunk_text_for_tts
+        sentences = re.split(r"(?<=[.!?])\s+", text)
 
     def _assemble_audio_chapters(
         self, chapter_audio_segments: List[AudioSegment]
