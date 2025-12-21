@@ -22,13 +22,9 @@ Base = declarative_base()
 # Production-safe ENUM creation
 def create_enum_type(name, values, metadata):
     """Create ENUM type safely for production environments"""
-    if os.getenv("ENVIRONMENT") == "production":
-        # In production, we still use create_type=True because migrations are idempotent (DROP TYPE IF EXISTS)
-        # and this ensures the app can start even if migrations are slightly out of sync.
-        return Enum(values, name=name, create_type=True)
-    else:
-        # In development, create ENUM types automatically
-        return Enum(values, name=name, create_type=True)
+    # Force lowercase values to prevent case sensitivity issues in DB
+    processed_values = [v.lower() if hasattr(v, 'lower') else v for v in values]
+    return Enum(*processed_values, name=name.lower(), create_type=True)
 
 
 class SubscriptionTier(str, enum.Enum):
@@ -61,7 +57,7 @@ class ConversionMode(str, enum.Enum):
     full = "full"
     summary = "summary"
     explanation = "explanation"
-    summary_explanation = "summary_explanation"  # Deprecated soon but keeping for compatibility
+    summary_explanation = "summary_explanation"
 
 
 class User(Base):

@@ -98,7 +98,7 @@ class User(UserBase):
     )
     subscription_tier: SubscriptionTier = Field(
         ...,
-        json_schema_extra={"example": SubscriptionTier.PRO},
+        json_schema_extra={"example": SubscriptionTier.pro},
         description="User's current subscription tier.",
     )
     paddle_customer_id: Optional[str] = Field(
@@ -134,7 +134,7 @@ class JobBase(BaseModel):
         description="The original filename of the uploaded PDF.",
     )
     voice_provider: VoiceProvider = Field(
-        VoiceProvider.OPENAI,
+        VoiceProvider.openai,
         description="The TTS provider to use for audio generation.",
     )
     voice_type: str = Field(
@@ -214,7 +214,7 @@ class Job(JobBase):
         description="The public URL for the generated audio file.",
     )
     status: JobStatus = Field(
-        ..., json_schema_extra={"example": JobStatus.COMPLETED}, description="The current status of the job."
+        ..., json_schema_extra={"example": JobStatus.completed}, description="The current status of the job."
     )
     progress_percentage: int = Field(
         ..., json_schema_extra={"example": 100}, ge=0, le=100, description="The processing progress (0-100)."
