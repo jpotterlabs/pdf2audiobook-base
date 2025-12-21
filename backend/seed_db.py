@@ -27,11 +27,9 @@ def run_db_fixes():
         if 'FULL' in labels and 'full' not in labels:
             logger.info("Renaming FULL to full in conversionmode")
             db.execute(text("ALTER TYPE conversionmode RENAME VALUE 'FULL' TO 'full'"))
-            db.execute(text("UPDATE jobs SET conversion_mode = 'full' WHERE conversion_mode = 'FULL'"))
         if 'SUMMARY_EXPLANATION' in labels and 'summary_explanation' not in labels:
             logger.info("Renaming SUMMARY_EXPLANATION to summary_explanation in conversionmode")
             db.execute(text("ALTER TYPE conversionmode RENAME VALUE 'SUMMARY_EXPLANATION' TO 'summary_explanation'"))
-            db.execute(text("UPDATE jobs SET conversion_mode = 'summary_explanation' WHERE conversion_mode = 'SUMMARY_EXPLANATION'"))
 
         # 2. Normalize subscriptiontier
         logger.info("Checking subscriptiontier enum...")
@@ -40,8 +38,6 @@ def run_db_fixes():
             if old in labels and new not in labels:
                 logger.info(f"Renaming {old} to {new} in subscriptiontier")
                 db.execute(text(f"ALTER TYPE subscriptiontier RENAME VALUE '{old}' TO '{new}'"))
-                # Update any existing users
-                db.execute(text(f"UPDATE users SET subscription_tier = '{new}' WHERE subscription_tier = '{old}'"))
 
         # 3. Normalize producttype
         logger.info("Checking producttype enum...")
@@ -50,7 +46,6 @@ def run_db_fixes():
             if old in labels and new not in labels:
                 logger.info(f"Renaming {old} to {new} in producttype")
                 db.execute(text(f"ALTER TYPE producttype RENAME VALUE '{old}' TO '{new}'"))
-                # Products table will be seeded/updated below
 
         # 4. Seed products
         logger.info("Seeding products...")
