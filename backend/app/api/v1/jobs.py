@@ -40,7 +40,7 @@ async def create_job(
         False, description="Prepend the audiobook with an AI-generated summary."
     ),
     conversion_mode: ConversionMode = Form(
-        ConversionMode.FULL, description="Conversion mode: 'full' for word-for-word or 'summary_explanation' for core concepts explanation."
+        ConversionMode.full, description="Conversion mode: 'full' for word-for-word or 'summary_explanation' for core concepts explanation."
     ),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

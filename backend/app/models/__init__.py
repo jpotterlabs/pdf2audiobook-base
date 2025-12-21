@@ -122,7 +122,7 @@ class Job(Base):
     include_summary = Column(Boolean, default=False)
     conversion_mode = Column(
         create_enum_type("conversionmode", ConversionMode, Base.metadata),
-        default=ConversionMode.FULL,
+        default=ConversionMode.full,
     )
     estimated_cost = Column(Numeric(10, 6), default=0.0)
 
