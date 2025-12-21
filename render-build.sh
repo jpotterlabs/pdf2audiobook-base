@@ -36,5 +36,19 @@ done
 echo "✅ Critical environment variables check passed"
 echo "Note: Some environment variables (DATABASE_URL, REDIS_URL, etc.) may only be available at runtime"
 
+# Install static FFmpeg
+echo "🎥 Installing static FFmpeg..."
+if [ ! -f "ffmpeg" ]; then
+    curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz -o ffmpeg.tar.xz
+    tar -xf ffmpeg.tar.xz
+    mv ffmpeg-*-amd64-static/ffmpeg .
+    mv ffmpeg-*-amd64-static/ffprobe .
+    rm -rf ffmpeg-*-amd64-static ffmpeg.tar.xz
+    chmod +x ffmpeg ffprobe
+    echo "✅ FFmpeg installed to $(pwd)/ffmpeg"
+else
+    echo "✅ FFmpeg already exists"
+fi
+
 echo "🎉 Build completed successfully!"
 echo "Note: Database migrations will be run on first startup"

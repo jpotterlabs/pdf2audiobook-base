@@ -7,6 +7,16 @@ echo "Working directory: $(pwd)"
 # Set Python path
 export PYTHONPATH="${PYTHONPATH}:/opt/render/project/src:/opt/render/project/src/backend"
 
+# Add local ffmpeg to PATH
+export PATH="$(pwd):$PATH"
+echo "🎥 Checking ffmpeg..."
+if command -v ffmpeg &> /dev/null; then
+    echo "✅ ffmpeg found: $(which ffmpeg)"
+    ffmpeg -version | head -n 1
+else
+    echo "⚠️ ffmpeg not found in PATH"
+fi
+
 # Verify required environment variables
 if [ -z "$DATABASE_URL" ]; then
     echo "❌ ERROR: DATABASE_URL is not set"
