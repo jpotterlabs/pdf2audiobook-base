@@ -123,6 +123,7 @@ nodaemon=true
 logfile=/tmp/supervisord.log
 pidfile=/tmp/supervisord.pid
 loglevel=info
+environment=PYTHONPATH="/opt/render/project/src:/opt/render/project/src/backend",GOOGLE_VOICE_US_FEMALE_STD="%(ENV_GOOGLE_VOICE_US_FEMALE_STD)s",GOOGLE_VOICE_US_MALE_STD="%(ENV_GOOGLE_VOICE_US_MALE_STD)s",GOOGLE_VOICE_GB_FEMALE_STD="%(ENV_GOOGLE_VOICE_GB_FEMALE_STD)s",GOOGLE_VOICE_GB_MALE_STD="%(ENV_GOOGLE_VOICE_GB_MALE_STD)s",GOOGLE_VOICE_US_FEMALE_PREMIUM="%(ENV_GOOGLE_VOICE_US_FEMALE_PREMIUM)s",GOOGLE_VOICE_US_MALE_PREMIUM="%(ENV_GOOGLE_VOICE_US_MALE_PREMIUM)s",GOOGLE_VOICE_GB_FEMALE_PREMIUM="%(ENV_GOOGLE_VOICE_GB_FEMALE_PREMIUM)s",GOOGLE_VOICE_GB_MALE_PREMIUM="%(ENV_GOOGLE_VOICE_GB_MALE_PREMIUM)s"
 
 [program:backend]
 command=${CMD_PREFIX}uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-10000} --workers 1
@@ -133,7 +134,6 @@ stdout_logfile=/dev/stdout
 stdout_logfile_maxbytes=0
 stderr_logfile=/dev/stderr
 stderr_logfile_maxbytes=0
-environment=PYTHONPATH="/opt/render/project/src:/opt/render/project/src/backend"
 
 [program:worker]
 command=${CMD_PREFIX}celery -A worker.celery_app worker --loglevel=info --concurrency=1
@@ -144,7 +144,6 @@ stdout_logfile=/dev/stdout
 stdout_logfile_maxbytes=0
 stderr_logfile=/dev/stderr
 stderr_logfile_maxbytes=0
-environment=PYTHONPATH="/opt/render/project/src:/opt/render/project/src/backend"
 
 SUPERVISOR_EOF
 
