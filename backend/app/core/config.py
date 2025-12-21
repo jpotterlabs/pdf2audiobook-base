@@ -53,7 +53,7 @@ class Settings(BaseSettings):
 
     # OpenRouter
     OPENROUTER_API_KEY: Optional[str] = None
-    LLM_MODEL: str = "google/gemini-2.0-flash-001"
+    LLM_MODEL: str = "google/gemini-2.0-flash-001:free"
 
     # Google TTS Voices
     GOOGLE_VOICE_US_FEMALE_STD: str = "en-US-Wavenet-C"

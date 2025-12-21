@@ -342,35 +342,15 @@ class PDFToAudioPipeline:
         return text.strip()
 
     def _generate_summary(self, text: str) -> str:
-        try:
-            # Use OpenRouter if available, otherwise fallback to OpenAI
-            openrouter_key = os.getenv("OPENROUTER_API_KEY")
-            if openrouter_key:
-                client = openai.OpenAI(
-                    api_key=openrouter_key,
-                    base_url="https://openrouter.ai/api/v1",
-                )
-                model = settings.LLM_MODEL
-            else:
-                client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-                model = "gpt-3.5-turbo"
-
-            max_length = 12000
-            truncated_text = text[:max_length] if len(text) > max_length else text
-
-            response = client.chat.completions.create(
-                model=model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "Summarize the following text in about 150 words.",
-                    },
-                    {"role": "user", "content": truncated_text},
-                ],
-                max_tokens=500, # Increased for safer summaries
-                temperature=0.3,
+            system_prompt = "Summarize the following text in about 150 words."
+            user_content = text[:12000] if len(text) > 12000 else text
+            
+            return self._call_llm_with_retry(
+                system_prompt=system_prompt,
+                user_content=user_content,
+                max_tokens=500,
+                temperature=0.3
             )
-            return response.choices[0].message.content.strip()
         except Exception as e:
             from loguru import logger
             logger.warning(f"Summary generation error: {e}")
@@ -378,42 +358,64 @@ class PDFToAudioPipeline:
 
     def _generate_concept_explanation(self, text: str) -> str:
         """Generate a comprehensive explanation of core concepts from the text."""
-        try:
-            # Use OpenRouter if available, otherwise fallback to OpenAI
-            openrouter_key = os.getenv("OPENROUTER_API_KEY")
-            if openrouter_key:
-                client = openai.OpenAI(
-                    api_key=openrouter_key,
-                    base_url="https://openrouter.ai/api/v1",
-                )
-                model = settings.LLM_MODEL
-            else:
-                client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-                model = "gpt-4"
+            system_prompt = """Analyze the provided text and create a comprehensive explanation of its core concepts.
+                Focus on explaining key ideas, methodologies, findings, and conclusions in a narrative form suitable for audio conversion.
+                Make the explanation educational and accessible, as if teaching the concepts to someone new to the topic."""
+            user_content = text[:10000] if len(text) > 10000 else text
 
-            max_length = 10000  # Larger context for concept extraction
-            truncated_text = text[:max_length] if len(text) > max_length else text
-
-            response = client.chat.completions.create(
-                model=model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": """Analyze the provided text and create a comprehensive explanation of its core concepts.
-                        Focus on explaining key ideas, methodologies, findings, and conclusions in a narrative form suitable for audio conversion.
-                        Make the explanation educational and accessible, as if teaching the concepts to someone new to the topic.""",
-                    },
-                    {"role": "user", "content": truncated_text},
-                ],
+            return self._call_llm_with_retry(
+                system_prompt=system_prompt,
+                user_content=user_content,
                 max_tokens=3000,
-                temperature=0.2,
+                temperature=0.2
             )
-            return response.choices[0].message.content.strip()
         except Exception as e:
             from loguru import logger
             logger.warning(f"Concept explanation error: {e}")
             # Fallback: generate a basic summary-style explanation
             return f"This document explores key concepts and ideas. {text[:1000]}... The main themes and conclusions are presented in a structured format suitable for understanding the core content."
+
+    def _call_llm_with_retry(self, system_prompt: str, user_content: str, max_tokens: int, temperature: float, max_retries: int = 5) -> str:
+        """Call LLM with exponential backoff to handle rate limits."""
+        import time
+        from loguru import logger
+        
+        openrouter_key = os.getenv("OPENROUTER_API_KEY")
+        if openrouter_key:
+            client = openai.OpenAI(
+                api_key=openrouter_key,
+                base_url="https://openrouter.ai/api/v1",
+            )
+            model = settings.LLM_MODEL
+        else:
+            client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+            model = "gpt-3.5-turbo"
+
+        for i in range(max_retries):
+            try:
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_content},
+                    ],
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                )
+                return response.choices[0].message.content.strip()
+            except Exception as e:
+                # Check for 429 Rate Limit
+                if "429" in str(e) or "rate limit" in str(e).lower():
+                    wait_time = (2 ** i) + (random.random() * i)
+                    logger.warning(f"⚠️ Rate limit hit (429). Retrying in {wait_time:.2f}s... (Attempt {i+1}/{max_retries})")
+                    time.sleep(wait_time)
+                    continue
+                
+                # Any other exception, raise it
+                logger.error(f"❌ LLM call failed: {e}")
+                raise e
+        
+        raise Exception(f"Max retries ({max_retries}) exceeded for LLM call.")
 
     def _chunk_text_for_tts(self, text: str, max_chars: int = 4500) -> List[str]:
         """
