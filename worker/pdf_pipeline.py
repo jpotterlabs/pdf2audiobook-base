@@ -60,6 +60,8 @@ class GoogleTTS(TTSProvider):
             "gb_female_premium": (settings.GOOGLE_VOICE_GB_FEMALE_PREMIUM, "en-GB"),
             "gb_male_premium": (settings.GOOGLE_VOICE_GB_MALE_PREMIUM, "en-GB"),
         }
+        from loguru import logger
+        logger.info(f"🎤 GoogleTTS initialized with voice mapping: {self.voice_mapping}")
 
     def text_to_audio(self, text: str, voice_id: str, speed: float) -> bytes:
         synthesis_input = texttospeech.SynthesisInput(text=text)

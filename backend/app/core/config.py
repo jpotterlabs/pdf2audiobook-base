@@ -12,6 +12,17 @@ class Settings(BaseSettings):
     # Environment
     ENVIRONMENT: str = "development"  # development, staging, production
     DEBUG: bool = False
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Diagnostic logging for voice environment variables
+        import logging
+        logger = logging.getLogger(__name__)
+        voice_vars = {k: v for k, v in os.environ.items() if k.startswith("GOOGLE_VOICE_")}
+        if voice_vars:
+            logger.info(f"Detected Google Voice Env Vars: {voice_vars}")
+        else:
+            logger.warning("No GOOGLE_VOICE_ environment variables detected at startup.")
     TESTING_MODE: bool = False
 
     # Database
@@ -57,13 +68,13 @@ class Settings(BaseSettings):
 
     # Google TTS Voices
     GOOGLE_VOICE_US_FEMALE_STD: str = "en-US-Wavenet-C"
-    GOOGLE_VOICE_US_MALE_STD: str = "en-US-Wavenet-D"
-    GOOGLE_VOICE_GB_FEMALE_STD: str = "en-GB-Wavenet-A"
-    GOOGLE_VOICE_GB_MALE_STD: str = "en-GB-Wavenet-B"
-    GOOGLE_VOICE_US_FEMALE_PREMIUM: str = "en-US-Wavenet-F"
-    GOOGLE_VOICE_US_MALE_PREMIUM: str = "en-US-Wavenet-J"
-    GOOGLE_VOICE_GB_FEMALE_PREMIUM: str = "en-GB-Wavenet-F"
-    GOOGLE_VOICE_GB_MALE_PREMIUM: str = "en-GB-Wavenet-D" 
+    GOOGLE_VOICE_US_MALE_STD: str = "en-US-Wavenet-I"
+    GOOGLE_VOICE_GB_FEMALE_STD: str = "en-GB-Wavenet-F"
+    GOOGLE_VOICE_GB_MALE_STD: str = "en-GB-Wavenet-O"
+    GOOGLE_VOICE_US_FEMALE_PREMIUM: str = ""
+    GOOGLE_VOICE_US_MALE_PREMIUM: str = ""
+    GOOGLE_VOICE_GB_FEMALE_PREMIUM: str = ""
+    GOOGLE_VOICE_GB_MALE_PREMIUM: str = ""
 
     # Google TTS Costs (per 1M characters)
     GOOGLE_TTS_COST_WAVENET: float = 4.0
@@ -92,7 +103,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
-        case_sensitive = True
+        case_sensitive = False
 
         @classmethod
         def customize_sources(cls, init_settings, env_settings, file_secret_settings):
