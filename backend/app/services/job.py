@@ -154,7 +154,6 @@ class JobService:
             return True
 
         return False
-        return False
 
     def delete_job(self, user_id: int, job_id: int) -> bool:
         """
