@@ -85,6 +85,12 @@ def process_pdf_task(self, job_id: int):
         token_cost = (usage_stats["tokens"] / 1_000_000) * 2.0
         final_cost = float(tts_cost) + token_cost
         
+        # Upload the audio file to S3
+        audio_key = f"audio/{job.user_id}/{job.id}.mp3"
+        audio_url = storage_service.upload_large_file(
+            audio_file_path, audio_key, "audio/mpeg"
+        )
+        
         job.audio_s3_key = audio_key
         job.audio_s3_url = audio_url
         
