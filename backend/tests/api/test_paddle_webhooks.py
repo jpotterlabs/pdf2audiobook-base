@@ -38,7 +38,7 @@ def test_paddle_webhook_success(client, db_session, mock_payment_verify):
     
     # Verify DB Log
     all_logs = db_session.query(WebhookEvent).all()
-    print(f"DEBUG LOGS: {[(l.paddle_event_id, l.status, l.error_message) for l in all_logs]}")
+    print(f"DEBUG LOGS: {[(log.paddle_event_id, log.status, log.error_message) for log in all_logs]}")
     
     log = db_session.query(WebhookEvent).filter_by(paddle_event_id="evt_123").first()
     assert log is not None

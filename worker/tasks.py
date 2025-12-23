@@ -85,18 +85,11 @@ def process_pdf_task(self, job_id: int):
         token_cost = (usage_stats["tokens"] / 1_000_000) * 2.0
         final_cost = float(tts_cost) + token_cost
         
-        # Deduct credits using service logic
-        job_service.deduct_credits(job.user_id, final_cost)
-
-        audio_key = f"audio/{job.user_id}/{job.id}.mp3"
-        
-        # Stream upload from disk
-        audio_url = storage_service.upload_large_file(
-            audio_file_path, audio_key, "audio/mpeg"
-        )
-
         job.audio_s3_key = audio_key
         job.audio_s3_url = audio_url
+        
+        # Deduct credits using service logic (AFTER successful upload)
+        job_service.deduct_credits(job.user_id, final_cost)
         
         job_service.update_job_status(
             job_id, 

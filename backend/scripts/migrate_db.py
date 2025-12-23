@@ -10,12 +10,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "backend"))
 from app.core.database import SessionLocal
 
 def migrate():
-    db = SessionLocal()
-    if not db:
-        logger.error("Could not connect to database")
-        return
-
     try:
+        db = SessionLocal()
         # 1. Create Webhook Events table
         logger.info("Creating webhook_events table...")
         db.execute(text("""

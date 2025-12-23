@@ -55,7 +55,7 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\n  \n}",
+          "raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\"\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -119,6 +119,46 @@
             "jobs"
           ],
           "variable": []
+        },
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "description": "The PDF file to be converted."
+            },
+            {
+              "key": "voice_provider",
+              "value": "openai",
+              "type": "text",
+              "description": "openai, google, azure, polyester"
+            },
+            {
+              "key": "voice_type",
+              "value": "alloy",
+              "type": "text",
+              "description": "Specific voice ID (e.g. alloy, nova)"
+            },
+            {
+              "key": "reading_speed",
+              "value": "1.0",
+              "type": "text",
+              "description": "0.5 to 2.0"
+            },
+            {
+              "key": "include_summary",
+              "value": "false",
+              "type": "text",
+              "description": "true/false"
+            },
+            {
+              "key": "conversion_mode",
+              "value": "full",
+              "type": "text",
+              "description": "full or summary_explanation"
+            }
+          ]
         },
         "auth": {
           "type": "bearer",
@@ -397,7 +437,7 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\n  \n}",
+          "raw": "{\n  \"product_id\": \"pro_subscription_monthly\"\n}",
           "options": {
             "raw": {
               "language": "json"
