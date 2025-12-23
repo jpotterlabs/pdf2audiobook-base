@@ -33,8 +33,7 @@ async def paddle_webhook(request: Request, db: Session = Depends(get_db)):
         try:
             body_str = raw_body.decode()
             webhook_data = json.loads(body_str)
-            print(f"DEBUG BODY: {body_str}")
-            print(f"DEBUG DATA: {webhook_data}")
+
             event_type = webhook_data.get("alert_name") or webhook_data.get("event_type") or "unknown"
             event_id = webhook_data.get("alert_id") or webhook_data.get("event_id") or "unknown"
         except Exception:

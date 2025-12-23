@@ -72,13 +72,21 @@ class PaymentService:
             # Modern Paddle Billing Verification
             from paddle_billing.Notifications import Secret, Verifier
             
-            # The SDK expects (signature, secret, payload)
-            # Ensure request_body is str if SDK expects str, or bytes. 
-            # Usually strict verifiers want the exact raw bytes. 
-            # Looking at generic python sdk patterns: verify(signature, secret, body)
+            # The SDK expects a Request object with 'headers' and 'body' attributes.
+            # We create a simple class todduck-type expectation. 
+            class SDKRequest:
+                def __init__(self, body_bytes, headers_dict):
+                    self.body = body_bytes
+                    self.headers = headers_dict
+            
+            # SDK's Verifier internal logic:
+            # raw_body = request.body.decode("utf-8")
+            # So we pass the bytes directly in .body
+            req = SDKRequest(request_body, {"Paddle-Signature": signature})
             
             verifier = Verifier()
-            return verifier.verify(signature, Secret(secret_key), request_body.decode("utf-8"))
+            # verify(request, secrets)
+            return verifier.verify(req, Secret(secret_key))
             
         except ImportError:
             print("--- ERROR: paddle-python-sdk not installed. cannot verify. ---")

@@ -71,11 +71,11 @@ class JobService:
         self,
         job_id: int,
         status: JobStatus,
-        progress: int = None,
-        error_message: str = None,
-        estimated_cost: float = None,
-        chars_processed: int = None,
-        tokens_used: int = None,
+        progress: Optional[int] = None,
+        error_message: Optional[str] = None,
+        estimated_cost: Optional[float] = None,
+        chars_processed: Optional[int] = None,
+        tokens_used: Optional[int] = None,
     ):
         job = self.db.query(Job).filter(Job.id == job_id).first()
         if not job:
@@ -163,7 +163,7 @@ class JobService:
     def deduct_credits(self, user_id: int, amount: float) -> bool:
         """
         Deduct credits from user's balance. 
-        Returns True if successful, False if insufficient confidence.
+        Returns True if successful, False if insufficient funds.
         """
         user = self.db.query(User).filter(User.id == user_id).with_for_update().first()
         if not user:
