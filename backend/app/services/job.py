@@ -71,9 +71,11 @@ class JobService:
         self,
         job_id: int,
         status: JobStatus,
-        progress: int = None,
-        error_message: str = None,
-        estimated_cost: float = None,
+        progress: Optional[int] = None,
+        error_message: Optional[str] = None,
+        estimated_cost: Optional[float] = None,
+        chars_processed: Optional[int] = None,
+        tokens_used: Optional[int] = None,
     ):
         job = self.db.query(Job).filter(Job.id == job_id).first()
         if not job:
@@ -89,6 +91,12 @@ class JobService:
 
         if estimated_cost is not None:
             job.estimated_cost = estimated_cost
+            
+        if chars_processed is not None:
+            job.chars_processed = chars_processed
+            
+        if tokens_used is not None:
+            job.tokens_used = tokens_used
 
         if status == JobStatus.processing and not job.started_at:
             job.started_at = datetime.now()
@@ -100,7 +108,7 @@ class JobService:
         self.db.refresh(job)
         return job
 
-    def can_user_create_job(self, user_id: int) -> bool:
+    def can_user_create_job(self, user_id: int, estimated_cost: float = 0.0) -> bool:
         # Bypass database checks in testing mode
         from app.core.config import settings
         if settings.TESTING_MODE:
@@ -110,14 +118,18 @@ class JobService:
         if not user:
             return False
 
-        # Check one-time credits first (can be used regardless of subscription limits)
+        # 1. Check credit balance (Primary Method)
+        # If user has enough credits for the estimated cost (or just > 0 if unknown)
+        if user.credit_balance is not None and user.credit_balance >= estimated_cost:
+            return True
+
+        # 2. Check legacy one-time credits
         if user.one_time_credits > 0:
             return True
 
-        # Check subscription limits
+        # 3. Check subscription limits (Legacy/Fallback for Free Tier)
         if user.subscription_tier == "free":
             # Free tier limit
-            from app.core.config import settings
             limit = settings.FREE_TIER_JOBS_LIMIT
             monthly_jobs = (
                 self.db.query(Job)
@@ -127,10 +139,11 @@ class JobService:
                     )
                     .count()
             )
+            # Only allow if under limit AND we haven't already returned True from credits
             return monthly_jobs < limit
 
         elif user.subscription_tier == "pro":
-            # Pro tier: 50 jobs per month
+            # Pro tier: 50 jobs per month (Legacy check, should move to credits mainly)
             monthly_jobs = (
                 self.db.query(Job)
                     .filter(
@@ -147,11 +160,23 @@ class JobService:
 
         return False
 
-    def consume_credit(self, user_id: int) -> bool:
-        user = self.db.query(User).filter(User.id == user_id).first()
+    def deduct_credits(self, user_id: int, amount: float) -> bool:
+        """
+        Deduct credits from user's balance. 
+        Returns True if successful, False if insufficient funds.
+        """
+        user = self.db.query(User).filter(User.id == user_id).with_for_update().first()
         if not user:
             return False
 
+        # 1. Deduct from credit balance if available
+        if user.credit_balance >= amount:
+            user.credit_balance = float(user.credit_balance) - amount
+            self.db.commit()
+            return True
+        
+        # 2. Legacy: Deduct from one_time_credits (1 credit = 1 job approx)
+        # This is a fallback if credit_balance is 0 but they have old credits
         if user.one_time_credits > 0:
             user.one_time_credits -= 1
             self.db.commit()

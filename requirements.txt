@@ -147,8 +147,7 @@ packaging==25.0
     #   limits
     #   pytesseract
     #   pytest
-paddle-sdk==0.1.6
-    # via pdf2audiobook
+paddle-python-sdk
 passlib==1.7.4
     # via pdf2audiobook
 pdf2image==1.17.0

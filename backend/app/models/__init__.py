@@ -76,7 +76,8 @@ class User(Base):
         default=SubscriptionTier.free,
     )
     paddle_customer_id = Column(String(255))
-    one_time_credits = Column(Integer, default=0)
+    one_time_credits = Column(Integer, default=0)  # Deprecated in favor of credit_balance, but kept for migration
+    credit_balance = Column(Numeric(10, 2), default=0.00)
     monthly_credits_used = Column(Integer, default=0)
 
     # Timestamps
@@ -122,6 +123,8 @@ class Job(Base):
         default=ConversionMode.full,
     )
     estimated_cost = Column(Numeric(10, 6), default=0.0)
+    chars_processed = Column(Integer, default=0)
+    tokens_used = Column(Integer, default=0)
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -211,3 +214,16 @@ class Transaction(Base):
     # Relationships
     user = relationship("User")
     product = relationship("Product")
+
+
+class WebhookEvent(Base):
+    __tablename__ = "webhook_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    paddle_event_id = Column(String(255), index=True)
+    event_type = Column(String(255), nullable=False)
+    payload = Column(Text, nullable=False)  # JSON string
+    status = Column(String(50), default="received")  # received, processed, failed
+    error_message = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+

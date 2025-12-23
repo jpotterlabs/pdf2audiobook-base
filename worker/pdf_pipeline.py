@@ -209,9 +209,12 @@ class PDFToAudioPipeline:
         conversion_mode: str = "full",
         progress_callback: Optional[Callable[[int], None]] = None,
         work_dir: Optional[str] = None
-    ) -> tuple[str, float]:
+    ) -> tuple[str, float, dict]:
         from loguru import logger
         logger.info(f"🚀 Starting PDF processing: provider='{voice_provider}', voice='{voice_type}', mode='{conversion_mode}', summary='{include_summary}'")
+        
+        usage_stats = {"chars": 0, "tokens": 0}
+        
         try:
             if progress_callback:
                 progress_callback(5)
@@ -224,9 +227,10 @@ class PDFToAudioPipeline:
                 progress_callback(15)
             cleaned_text = self._advanced_text_cleanup(raw_text)
 
-            final_text = self._get_final_text(
+            final_text, tokens_used = self._get_final_text(
                 cleaned_text, include_summary, conversion_mode, progress_callback
             )
+            usage_stats["tokens"] += tokens_used
 
             if progress_callback:
                 progress_callback(35)
@@ -245,10 +249,13 @@ class PDFToAudioPipeline:
             chunk_files = []
             
             # Process chunks and save to disk immediately
+            char_count = 0
             for i, chunk in enumerate(chunks):
                 progress = 40 + int((i / len(chunks)) * 55)
                 if progress_callback:
                     progress_callback(progress)
+                
+                char_count += len(chunk)
 
                 audio_data = tts_provider.text_to_audio(
                     chunk, voice_type, reading_speed
@@ -259,6 +266,8 @@ class PDFToAudioPipeline:
                     f.write(audio_data)
                 
                 chunk_files.append(chunk_path)
+            
+            usage_stats["chars"] = char_count
 
             if progress_callback:
                 progress_callback(95)
@@ -296,34 +305,40 @@ class PDFToAudioPipeline:
 
             if progress_callback:
                 progress_callback(100)
-            if progress_callback:
-                progress_callback(100)
-            return full_audio_data_path, estimated_cost
+            return full_audio_data_path, estimated_cost, usage_stats
 
         except Exception as e:
             raise Exception(f"PDF processing failed: {str(e)}")
 
-    def _get_final_text(self, cleaned_text, include_summary, conversion_mode, progress_callback):
+    def _get_final_text(self, cleaned_text, include_summary, conversion_mode, progress_callback) -> tuple[str, int]:
         from loguru import logger
         mode = str(conversion_mode).lower()
         logger.info(f"🔍 Determining final text for mode: '{mode}' (original: '{conversion_mode}')")
+        
+        tokens = 0
 
         if mode == "summary":
             if progress_callback:
                 progress_callback(25)
-            return self._generate_summary(cleaned_text)
+            content, t = self._generate_summary(cleaned_text)
+            tokens += t
+            return content, tokens
         elif mode in ["explanation", "summary_explanation"]:
             if progress_callback:
                 progress_callback(25)
-            return self._generate_concept_explanation(cleaned_text)
+            content, t = self._generate_concept_explanation(cleaned_text)
+            tokens += t
+            return content, tokens
         
         # Mode is FULL or anything else
         if include_summary:
             if progress_callback:
                 progress_callback(25)
-            summary = self._generate_summary(cleaned_text)
-            return f"Summary of the document: {summary}\n\n{cleaned_text}"
-        return cleaned_text
+            summary, t = self._generate_summary(cleaned_text)
+            tokens += t
+            return f"Summary of the document: {summary}\n\n{cleaned_text}", tokens
+            
+        return cleaned_text, tokens
 
     def _calculate_cost(self, provider: str, voice_type: str, text: str) -> float:
         char_count = len(text)
@@ -387,28 +402,28 @@ class PDFToAudioPipeline:
         text = re.sub(r"\s{2,}", " ", text)
         return text.strip()
 
-    def _generate_summary(self, text: str) -> str:
+    def _generate_summary(self, text: str) -> tuple[str, int]:
         """Generate a concise summary of the text."""
         from loguru import logger
         try:
             system_prompt = "Summarize the following text in about 150 words."
             user_content = text[:20000] if len(text) > 20000 else text # Flash has large context
             
-            summary = self._call_llm_with_retry(
+            summary, tokens = self._call_llm_with_retry(
                 system_prompt=system_prompt,
                 user_content=user_content,
                 max_tokens=600,
                 temperature=0.3
             )
-            logger.info(f"✅ Summary generated: {len(summary)} chars")
-            return summary
+            logger.info(f"✅ Summary generated: {len(summary)} chars, {tokens} tokens")
+            return summary, tokens
         except Exception as e:
             logger.warning(f"⚠️ Summary generation error: {e}")
             if "api_key" in str(e).lower() or "401" in str(e):
                 logger.error("❌ CRITICAL: LLM API key is missing or invalid. Check your environment variables.")
-            return text[:500] + "..."
+            return text[:500] + "...", 0
 
-    def _generate_concept_explanation(self, text: str) -> str:
+    def _generate_concept_explanation(self, text: str) -> tuple[str, int]:
         """Generate a comprehensive explanation of core concepts from the text."""
         from loguru import logger
         try:
@@ -417,22 +432,22 @@ class PDFToAudioPipeline:
                 Make the explanation educational and accessible, as if teaching the concepts to someone new to the topic."""
             user_content = text[:20000] if len(text) > 20000 else text
 
-            explanation = self._call_llm_with_retry(
+            explanation, tokens = self._call_llm_with_retry(
                 system_prompt=system_prompt,
                 user_content=user_content,
                 max_tokens=4000,
                 temperature=0.2
             )
-            logger.info(f"✅ Concept explanation generated: {len(explanation)} chars")
-            return explanation
+            logger.info(f"✅ Concept explanation generated: {len(explanation)} chars, {tokens} tokens")
+            return explanation, tokens
         except Exception as e:
             logger.warning(f"⚠️ Concept explanation error: {e}")
             if "api_key" in str(e).lower() or "401" in str(e):
                 logger.error("❌ CRITICAL: LLM API key is missing or invalid. Check your environment variables.")
             # Fallback: generate a basic summary-style explanation
-            return f"This document explores key concepts and ideas. {text[:1000]}... The main themes and conclusions are presented in a structured format suitable for understanding the core content."
+            return f"This document explores key concepts and ideas. {text[:1000]}... The main themes and conclusions are presented in a structured format suitable for understanding the core content.", 0
 
-    def _call_llm_with_retry(self, system_prompt: str, user_content: str, max_tokens: int, temperature: float, max_retries: int = 5) -> str:
+    def _call_llm_with_retry(self, system_prompt: str, user_content: str, max_tokens: int, temperature: float, max_retries: int = 5) -> tuple[str, int]:
         """Call LLM with exponential backoff to handle rate limits."""
         import time
         from loguru import logger
@@ -467,7 +482,8 @@ class PDFToAudioPipeline:
                     max_tokens=max_tokens,
                     temperature=temperature,
                 )
-                return response.choices[0].message.content.strip()
+                tokens = response.usage.total_tokens if response.usage else 0
+                return response.choices[0].message.content.strip(), tokens
             except Exception as e:
                 # Check for 429 Rate Limit
                 if "429" in str(e) or "rate limit" in str(e).lower():

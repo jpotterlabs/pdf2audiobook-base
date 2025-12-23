@@ -1,0 +1,1260 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "pdf2audiobook",
+    "description": "\n    PDF2Audiobook SaaS Platform API\n\n    A comprehensive API for converting PDF documents into high-quality audiobooks using advanced text-to-speech technology.\n\n    ## Features\n\n    * **PDF Processing**: Extract and convert text from PDF documents\n    * **Multiple TTS Providers**: Support for OpenAI, Google Cloud, AWS Polly, Azure, and ElevenLabs\n    * **Voice Customization**: Choose from various voices and adjust reading speed\n    * **AI-Powered Summaries**: Generate intelligent summaries for complex documents\n    * **Secure Authentication**: JWT-based authentication with Clerk integration\n    * **Usage Tracking**: Monitor credits and subscription usage\n\n    ## Authentication\n\n    All API endpoints require authentication via JWT tokens obtained from Clerk.\n    Include the token in the Authorization header: `Authorization: Bearer <token>`\n\n    ## Rate Limiting\n\n    API requests are rate limited to prevent abuse. Current limits: 100 requests per minute globally.\n\n    ## File Upload Limits\n\n    - Maximum file size: 50MB\n    - Supported formats: PDF only\n    - Content type: application/pdf\n    ",
+    "contact": {
+      "name": "PDF2Audiobook Support",
+      "email": "support@pdf2audiobook.com"
+    },
+    "license": {
+      "name": "Proprietary"
+    },
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Get Current User",
+        "description": "Retrieves the complete profile for the currently authenticated user.",
+        "operationId": "get_current_user_info_api_v1_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Update Current User",
+        "description": "Updates the profile for the currently authenticated user.",
+        "operationId": "update_current_user_api_v1_auth_me_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/verify": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Verify Token and Get User",
+        "description": "Verifies a JWT token from the auth provider (Clerk), then finds or creates a user in the local database. This endpoint is typically called after a successful login on the frontend.",
+        "operationId": "verify_token_api_v1_auth_verify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_verify_token_api_v1_auth_verify_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/": {
+      "post": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Create a New PDF Conversion Job",
+        "description": "Upload a PDF file and create a new job to convert it into an audiobook. This endpoint accepts multipart/form-data.",
+        "operationId": "create_job_api_v1_jobs__post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_create_job_api_v1_jobs__post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "List All Jobs for Current User",
+        "description": "Retrieves a paginated list of all PDF conversion jobs created by the currently authenticated user.",
+        "operationId": "get_user_jobs_api_v1_jobs__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Job"
+                  },
+                  "title": "Response Get User Jobs Api V1 Jobs  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/{job_id}": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Get Job by ID",
+        "description": "Retrieves the full details of a specific job by its ID. The user must own the job.",
+        "operationId": "get_job_api_v1_jobs__job_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Manually Update a Job (for Testing)",
+        "description": "Allows for manual update of a job's attributes. This endpoint is intended for testing and simulation of the worker process.",
+        "operationId": "update_job_manual_api_v1_jobs__job_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Delete a Job",
+        "description": "Permanently deletes a specific job and its associated files (PDF, Audio).",
+        "operationId": "delete_job_api_v1_jobs__job_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/{job_id}/status": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Get Job Status",
+        "description": "Retrieves the current status, progress, and result of a specific job. This is a lightweight endpoint for polling.",
+        "operationId": "get_job_status_api_v1_jobs__job_id__status_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/cleanup": {
+      "delete": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Delete All Failed Jobs",
+        "description": "Permanently deletes all jobs with 'failed' or 'cancelled' status for the current user. Also removes associated files from storage.",
+        "operationId": "cleanup_failed_jobs_api_v1_jobs_cleanup_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/payments/products": {
+      "get": {
+        "tags": [
+          "Payments"
+        ],
+        "summary": "List All Available Products",
+        "description": "Retrieves a list of all active products and subscription plans.",
+        "operationId": "get_products_api_v1_payments_products_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Product"
+                  },
+                  "type": "array",
+                  "title": "Response Get Products Api V1 Payments Products Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/payments/checkout-url": {
+      "post": {
+        "tags": [
+          "Payments"
+        ],
+        "summary": "Generate a Payment Checkout URL",
+        "description": "Creates a unique Paddle checkout URL for a specific product and the currently authenticated user.",
+        "operationId": "create_checkout_url_api_v1_payments_checkout_url_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutURLRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutURLResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/webhooks/paddle": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Handle Paddle Webhooks",
+        "description": "This single endpoint receives all webhook notifications from Paddle for events like successful payments, new subscriptions, cancellations, etc. It verifies the webhook signature and processes the event to update user data accordingly.",
+        "operationId": "paddle_webhook_api_v1_webhooks_paddle_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Health Check",
+        "description": "Performs a health check on the API and its dependencies.\nReturns basic health status without exposing sensitive configuration details.",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Read Root",
+        "operationId": "read_root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_create_job_api_v1_jobs__post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File",
+            "description": "The PDF file to be converted."
+          },
+          "voice_provider": {
+            "$ref": "#/components/schemas/VoiceProvider",
+            "description": "The TTS provider to use. See schema for available providers.",
+            "default": "openai"
+          },
+          "voice_type": {
+            "type": "string",
+            "title": "Voice Type",
+            "description": "The specific voice to use from the selected provider (e.g., 'alloy', 'nova').",
+            "default": "default"
+          },
+          "reading_speed": {
+            "type": "number",
+            "title": "Reading Speed",
+            "description": "Adjust the reading speed (0.5 to 2.0).",
+            "default": 1.0
+          },
+          "include_summary": {
+            "type": "boolean",
+            "title": "Include Summary",
+            "description": "Prepend the audiobook with an AI-generated summary.",
+            "default": false
+          },
+          "conversion_mode": {
+            "$ref": "#/components/schemas/ConversionMode",
+            "description": "Conversion mode: 'full' for word-for-word or 'summary_explanation' for core concepts explanation.",
+            "default": "full"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_create_job_api_v1_jobs__post"
+      },
+      "Body_verify_token_api_v1_auth_verify_post": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "Body_verify_token_api_v1_auth_verify_post"
+      },
+      "CheckoutURLRequest": {
+        "properties": {
+          "product_id": {
+            "type": "integer",
+            "title": "Product Id",
+            "description": "The internal ID of the product to purchase.",
+            "example": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "product_id"
+        ],
+        "title": "CheckoutURLRequest"
+      },
+      "CheckoutURLResponse": {
+        "properties": {
+          "checkout_url": {
+            "type": "string",
+            "title": "Checkout Url",
+            "description": "The generated Paddle checkout URL.",
+            "example": "https://sandbox-vendors.paddle.com/checkout/user/123/hash?redirect_url=..."
+          }
+        },
+        "type": "object",
+        "required": [
+          "checkout_url"
+        ],
+        "title": "CheckoutURLResponse"
+      },
+      "ConversionMode": {
+        "type": "string",
+        "enum": [
+          "full",
+          "summary",
+          "explanation",
+          "summary_explanation"
+        ],
+        "title": "ConversionMode",
+        "description": "Enumeration for PDF conversion modes."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Job": {
+        "properties": {
+          "original_filename": {
+            "type": "string",
+            "title": "Original Filename",
+            "description": "The original filename of the uploaded PDF.",
+            "example": "my_document.pdf"
+          },
+          "voice_provider": {
+            "$ref": "#/components/schemas/VoiceProvider",
+            "description": "The TTS provider to use for audio generation.",
+            "default": "openai"
+          },
+          "voice_type": {
+            "type": "string",
+            "title": "Voice Type",
+            "description": "The specific voice to use from the selected provider.",
+            "default": "default",
+            "example": "alloy"
+          },
+          "reading_speed": {
+            "type": "number",
+            "maximum": 2.0,
+            "minimum": 0.5,
+            "title": "Reading Speed",
+            "description": "The reading speed for the audiobook (0.5x to 2.0x).",
+            "default": 1.0
+          },
+          "include_summary": {
+            "type": "boolean",
+            "title": "Include Summary",
+            "description": "Whether to generate and include an AI summary at the beginning of the audiobook.",
+            "default": false
+          },
+          "conversion_mode": {
+            "$ref": "#/components/schemas/ConversionMode",
+            "description": "Conversion mode: full word-for-word conversion or summary explanation of core concepts.",
+            "default": "full"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Internal unique identifier for the job.",
+            "example": 42
+          },
+          "user_id": {
+            "type": "integer",
+            "title": "User Id",
+            "description": "The ID of the user who created the job.",
+            "example": 1
+          },
+          "pdf_s3_key": {
+            "type": "string",
+            "title": "Pdf S3 Key",
+            "description": "The S3 key for the stored PDF file.",
+            "example": "pdfs/1/my_document.pdf"
+          },
+          "audio_s3_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio S3 Key",
+            "description": "The S3 key for the generated audio file.",
+            "example": "audio/1/42.mp3"
+          },
+          "pdf_s3_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pdf S3 Url",
+            "description": "The public URL for the PDF file.",
+            "example": "https://bucket.s3.amazonaws.com/pdfs/1/my_document.pdf"
+          },
+          "audio_s3_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio S3 Url",
+            "description": "The public URL for the generated audio file.",
+            "example": "https://bucket.s3.amazonaws.com/audio/1/42.mp3"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus",
+            "description": "The current status of the job.",
+            "example": "completed"
+          },
+          "progress_percentage": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Progress Percentage",
+            "description": "The processing progress (0-100).",
+            "example": 100
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message",
+            "description": "An error message if the job failed."
+          },
+          "estimated_cost": {
+            "type": "number",
+            "title": "Estimated Cost",
+            "description": "The estimated cost of the job.",
+            "default": 0.0
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Timestamp when the job was created."
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At",
+            "description": "Timestamp when processing started."
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At",
+            "description": "Timestamp when processing was completed."
+          }
+        },
+        "type": "object",
+        "required": [
+          "original_filename",
+          "id",
+          "user_id",
+          "pdf_s3_key",
+          "status",
+          "progress_percentage",
+          "created_at"
+        ],
+        "title": "Job",
+        "description": "Schema for representing a job, returned from the API."
+      },
+      "JobStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "processing",
+          "completed",
+          "failed",
+          "cancelled"
+        ],
+        "title": "JobStatus",
+        "description": "Enumeration for the status of a PDF processing job."
+      },
+      "JobUpdate": {
+        "properties": {
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The new status of the job."
+          },
+          "progress_percentage": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress Percentage",
+            "description": "The current processing progress (0-100)."
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message",
+            "description": "An error message if the job failed."
+          },
+          "audio_s3_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio S3 Url",
+            "description": "The public URL for the generated audio file."
+          },
+          "estimated_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Cost",
+            "description": "The estimated cost of the job."
+          }
+        },
+        "type": "object",
+        "title": "JobUpdate",
+        "description": "Schema for updating a job's status or progress."
+      },
+      "Product": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the product."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "A detailed description of the product."
+          },
+          "price": {
+            "type": "number",
+            "title": "Price",
+            "description": "The price of the product."
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "description": "The currency for the price.",
+            "default": "USD"
+          },
+          "credits_included": {
+            "type": "integer",
+            "title": "Credits Included",
+            "description": "Number of credits or monthly job limit included."
+          },
+          "type": {
+            "$ref": "#/components/schemas/ProductType",
+            "description": "Product type: subscription or one-time."
+          },
+          "subscription_tier": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SubscriptionTier"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The associated tier for subscriptions."
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Internal unique identifier for the product."
+          },
+          "paddle_product_id": {
+            "type": "string",
+            "title": "Paddle Product Id",
+            "description": "The product's ID within Paddle."
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "description": "Whether the product is currently available for purchase.",
+            "default": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "price",
+          "credits_included",
+          "type",
+          "id",
+          "paddle_product_id",
+          "created_at"
+        ],
+        "title": "Product",
+        "description": "Schema for representing a product, returned from the API."
+      },
+      "ProductType": {
+        "type": "string",
+        "enum": [
+          "subscription",
+          "one_time"
+        ],
+        "title": "ProductType",
+        "description": "Enumeration for product types (subscription or one-time purchase)."
+      },
+      "SubscriptionTier": {
+        "type": "string",
+        "enum": [
+          "free",
+          "pro",
+          "enterprise"
+        ],
+        "title": "SubscriptionTier",
+        "description": "Enumeration for user subscription tiers."
+      },
+      "User": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email",
+            "description": "User's unique email address.",
+            "example": "user@example.com"
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name",
+            "description": "User's first name.",
+            "example": "John"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name",
+            "description": "User's last name.",
+            "example": "Doe"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Internal unique identifier for the user.",
+            "example": 1
+          },
+          "auth_provider_id": {
+            "type": "string",
+            "title": "Auth Provider Id",
+            "description": "Unique identifier from the authentication provider.",
+            "example": "clerk_123xyz"
+          },
+          "subscription_tier": {
+            "$ref": "#/components/schemas/SubscriptionTier",
+            "description": "User's current subscription tier.",
+            "example": "pro"
+          },
+          "paddle_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paddle Customer Id",
+            "description": "User's customer ID from Paddle.",
+            "example": "ctm_123abc"
+          },
+          "one_time_credits": {
+            "type": "integer",
+            "title": "One Time Credits",
+            "description": "Number of one-time credits the user has.",
+            "example": 10
+          },
+          "monthly_credits_used": {
+            "type": "integer",
+            "title": "Monthly Credits Used",
+            "description": "Number of monthly subscription credits used in the current billing cycle.",
+            "example": 5
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Timestamp when the user was created."
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "Timestamp when the user was last updated."
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "id",
+          "auth_provider_id",
+          "subscription_tier",
+          "one_time_credits",
+          "monthly_credits_used",
+          "created_at"
+        ],
+        "title": "User",
+        "description": "Schema for representing a user, returned from the API."
+      },
+      "UserUpdate": {
+        "properties": {
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name",
+            "description": "User's updated first name.",
+            "example": "John"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name",
+            "description": "User's updated last name.",
+            "example": "Doe"
+          }
+        },
+        "type": "object",
+        "title": "UserUpdate",
+        "description": "Schema for updating a user's profile information."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VoiceProvider": {
+        "type": "string",
+        "enum": [
+          "openai",
+          "google",
+          "aws_polly",
+          "azure",
+          "eleven_labs"
+        ],
+        "title": "VoiceProvider",
+        "description": "Enumeration for supported Text-to-Speech (TTS) providers."
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

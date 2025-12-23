@@ -87,6 +87,10 @@ class UserService:
             next_billing_date=datetime.fromisoformat(webhook_data.get("next_payment_date"))
         )
         
+        # Grant initial credits for subscription
+        if product and product.credits_included:
+            user.credit_balance = (user.credit_balance or 0) + product.credits_included
+        
         self.db.add(subscription)
         self.db.commit()
     
@@ -100,9 +104,15 @@ class UserService:
         
         if subscription:
             subscription.status = "active"
-            # Reset monthly credits usage
+            
+            # Reset monthly tracking and grant new credits
             user = subscription.user
             user.monthly_credits_used = 0
+            
+            if subscription.product and subscription.product.credits_included:
+                # Add monthly credits. Policy: Do they rollover? 
+                # For now, let's assume they ADD to balance (rollover).
+                user.credit_balance = (user.credit_balance or 0) + subscription.product.credits_included
             
             self.db.commit()
     
@@ -118,9 +128,8 @@ class UserService:
             subscription.status = "cancelled"
             subscription.cancelled_at = datetime.now()
             
-            # Downgrade user to free tier at end of billing period
-            user = subscription.user
-            user.subscription_tier = "free"
+            # Downgrade happens at end of period usually, but here we just mark cancelled.
+            # We don't remove credits immediately.
             
             self.db.commit()
     
@@ -142,7 +151,9 @@ class UserService:
         
         # Add credits to user account
         if product and product.credits_included:
+            # Update both legacy and new balance
             user.one_time_credits += product.credits_included
+            user.credit_balance = (user.credit_balance or 0) + product.credits_included
         
         # Create transaction record
         transaction = Transaction(

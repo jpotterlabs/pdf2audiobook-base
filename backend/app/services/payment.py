@@ -52,7 +52,7 @@ class PaymentService:
 
     def verify_webhook_signature(self, request_body: bytes, signature: str) -> bool:
         """
-        Verifies the signature of an incoming Paddle webhook.
+        Verifies the signature of an incoming Paddle webhook using the official SDK.
         """
         if settings.TESTING_MODE:
             print("--- MOCK PAYMENT: Skipping webhook verification ---")
@@ -61,11 +61,36 @@ class PaymentService:
         if not signature:
             return False
 
-        # The request body is a dictionary of POST parameters.
-        # It needs to be sorted by key, and then serialized to a PHP-style string.
-        # This is a known complexity of Paddle Classic webhooks.
-        # For simplicity, we will assume a JSON body and a more modern HMAC verification.
-        # NOTE: This is a simplified HMAC check. Paddle Classic's verification is more complex.
-        # For a production app, use a library that correctly implements Paddle's PHP-style serialization.
-        computed_signature = hmac.new(key=self.public_key.encode(), msg=request_body, digestmod=sha1).hexdigest()
-        return hmac.compare_digest(computed_signature, signature)
+        secret_key = settings.PADDLE_WEBHOOK_SECRET_KEY
+        if not secret_key:
+            # If no secret key is configured, we cannot verify. 
+            # (Unless falling back to old method, but user asked for modern)
+            print("--- WARNING: PADDLE_WEBHOOK_SECRET_KEY not set. Verification failing. ---")
+            return False
+
+        try:
+            # Modern Paddle Billing Verification
+            from paddle_billing.Notifications import Secret, Verifier
+            
+            # The SDK expects a Request object with 'headers' and 'body' attributes.
+            # We create a simple class todduck-type expectation. 
+            class SDKRequest:
+                def __init__(self, body_bytes, headers_dict):
+                    self.body = body_bytes
+                    self.headers = headers_dict
+            
+            # SDK's Verifier internal logic:
+            # raw_body = request.body.decode("utf-8")
+            # So we pass the bytes directly in .body
+            req = SDKRequest(request_body, {"Paddle-Signature": signature})
+            
+            verifier = Verifier()
+            # verify(request, secrets)
+            return verifier.verify(req, Secret(secret_key))
+            
+        except ImportError:
+            print("--- ERROR: paddle-python-sdk not installed. cannot verify. ---")
+            return False
+        except Exception as e:
+            print(f"--- Webhook verification failed: {e} ---")
+            return False
