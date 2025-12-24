@@ -119,7 +119,7 @@ export function JobCard({ job, onDelete }: JobCardProps) {
                 <DollarSign className="w-3 h-3" />
                 Cost
               </span>
-              <span className="font-medium text-primary">${job.estimated_cost.toFixed(4)}</span>
+              <span className="font-medium text-primary">${Number(job.estimated_cost || 0).toFixed(4)}</span>
             </div>
           )}
           {job.tokens_used !== undefined && job.tokens_used > 0 && (

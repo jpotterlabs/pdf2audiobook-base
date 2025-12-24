@@ -184,7 +184,7 @@ export function UploadForm() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label htmlFor="reading_speed">Reading Speed</Label>
-              <span className="text-sm font-medium text-primary">{readingSpeed.toFixed(1)}x</span>
+              <span className="text-sm font-medium text-primary">{Number(readingSpeed || 1).toFixed(1)}x</span>
             </div>
             <Slider
               id="reading_speed"

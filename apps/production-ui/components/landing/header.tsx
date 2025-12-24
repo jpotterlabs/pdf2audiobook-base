@@ -72,7 +72,7 @@ export function Header() {
                   {loading ? (
                     <Skeleton className="h-4 w-12" />
                   ) : (
-                    <span className="text-sm font-semibold text-primary">${credits.toFixed(2)}</span>
+                    <span className="text-sm font-semibold text-primary">${Number(credits || 0).toFixed(2)}</span>
                   )}
                   <Button
                     variant="ghost"
