@@ -5,25 +5,23 @@ This document outlines the planned future enhancements and strategic direction f
 ## Phase 1: Enhanced Core Experience (Q1)
 Focus: Improving the quality and reliability of the primary conversion engine.
 
+- [ ] **AI-Powered PDF Cleanup**: Integrate a pre-processing step to intelligently remove persistent headers, footers, and page numbers that often clutter audiobook audio.
 - [ ] **Multi-Voice Narratives**: Support for different voices for headers, summaries, and main content.
-- [ ] **Advanced Text Cleaning**: Enhanced regex and AI-based strategies to remove math symbols, citations, and table data from academic PDFs more cleanly.
 - [ ] **Smart Chapter Detection**: Automatically splitting long PDFs into logical audio chapters with a navigable table of contents.
-- [ ] **Custom Pronunciation Lexicons**: Allow users to define how specific technical terms or names should be pronounced.
 
 ## Phase 2: Interactive AI Features (Q2)
 Focus: Transforming a passive listening experience into an active learning tool.
 
+- [ ] **Sentry & Observability**: Integrate Sentry for the backend/worker to catch silent failures in production and monitor performance bottlenecks.
 - [ ] **Conversational Audiobook**: An AI agent you can talk to while listening to ask for clarifications or more examples on the current section.
 - [ ] **Auto-Generated Flashcards**: Automatically generate study cards based on the PDF content, synced with the audio.
-- [ ] **Context-Aware Summaries**: Allow users to request summaries focused on specific topics (e.g., "summarize just the methodology section").
 
 ## Phase 3: Platform & Ecosystem (Q3)
 Focus: Accessibility, distribution, and mobile experience.
 
+- [ ] **User Onboarding Flow**: Implement a guided tour in the frontend for new users to explain the credit system and how to upload their first PDF.
+- [ ] **Email Notifications**: Automatically send an email notification with the MP3 link when a long-running conversion job is completed.
 - [ ] **Mobile App (iOS/Android)**: Native or PWA experience with offline listening support.
-- [ ] **Browser Extension**: One-click "Send to Audiobook" for PDFs found on ArXiv, PubMed, or blogs.
-- [ ] **Cloud Sync**: Seamlessly pick up listening where you left off across devices.
-- [ ] **API for Developers**: Allow third-party apps to integrate PDF2Audiobook's conversion engine.
 
 ## Phase 4: Enterprise & Collaboration (Q4)
 Focus: Teams, schools, and bulk processing.
