@@ -70,7 +70,9 @@ pdf2audiobook/
 │       ├── models/         # SQLAlchemy models
 │       ├── schemas/        # Pydantic schemas
 │       └── services/       # Business logic
-├── frontend/               # Next.js frontend
+├── apps/                    # Frontend applications
+│   ├── reference-ui/        # Legacy Next.js reference frontend
+│   └── production-ui/       # New Vercel-hosted production UI
 ├── worker/                 # Celery worker
 │   ├── celery_app.py      # Celery configuration
 │   ├── tasks.py           # Background tasks

@@ -61,7 +61,7 @@ All backend calls must go through the centralized API client.
 ## 5. Directory Structure
 
 ```
-frontend/
+apps/reference-ui/ (or production-ui/)
 ├── src/
 │   ├── app/                 # Pages (Next.js App Router)
 │   ├── components/

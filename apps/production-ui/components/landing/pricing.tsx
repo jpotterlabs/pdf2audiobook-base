@@ -1,0 +1,183 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Check } from "lucide-react"
+import { api } from "@/lib/api/client"
+import type { Product } from "@/lib/api/types"
+
+const FALLBACK_PRICING = {
+  pro: 29,
+  enterprise: 99,
+}
+
+export function Pricing() {
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        const data = await api.payments.getProducts()
+        if (Array.isArray(data)) {
+          setProducts(data)
+        } else {
+          console.error("[v0] API returned unexpected products format:", data)
+        }
+      } catch (error) {
+        console.log("[v0] Using fallback pricing data")
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchProducts()
+  }, [])
+
+  const getTierFeatures = (tier: string) => {
+    const features = {
+      free: ["3 conversions per month", "Basic voices (OpenAI)", "Standard processing speed", "Max 10 pages per PDF"],
+      pro: [
+        "50 conversions per month",
+        "All premium voices",
+        "Priority processing",
+        "Unlimited pages",
+        "AI summaries included",
+        "Custom reading speed",
+      ],
+      enterprise: [
+        "Unlimited conversions",
+        "All premium voices",
+        "Highest priority",
+        "Unlimited pages",
+        "AI summaries included",
+        "API access",
+        "Dedicated support",
+        "Custom integrations",
+      ],
+    }
+    return features[tier as keyof typeof features] || []
+  }
+
+  const getPrice = (tier: "pro" | "enterprise") => {
+    const product = products.find((p) => p.name.toLowerCase().includes(tier))
+    return product?.price || FALLBACK_PRICING[tier]
+  }
+
+  if (loading) {
+    return (
+      <section className="py-24 px-4">
+        <div className="max-w-7xl mx-auto text-center">
+          <p className="text-muted-foreground">Loading pricing...</p>
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section id="pricing" className="py-24 px-4 relative">
+      <div className="max-w-7xl mx-auto">
+        {/* Section header */}
+        <div className="text-center mb-16 space-y-4">
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-balance">
+            Simple,{" "}
+            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Transparent Pricing
+            </span>
+          </h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            Choose the plan that fits your needs. Start free, upgrade anytime.
+          </p>
+        </div>
+
+        {/* Pricing cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {/* Free Tier */}
+          <Card className="glass border-border/50 hover:border-primary/50 transition-all duration-300">
+            <CardHeader>
+              <CardTitle className="text-2xl">Free</CardTitle>
+              <CardDescription>Perfect for trying out</CardDescription>
+              <div className="pt-4">
+                <span className="text-4xl font-bold">$0</span>
+                <span className="text-muted-foreground">/month</span>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ul className="space-y-3">
+                {getTierFeatures("free").map((feature, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                    <span className="text-sm leading-relaxed">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+            <CardFooter>
+              <Button asChild className="w-full bg-transparent" variant="outline">
+                <Link href="/sign-up">Get Started</Link>
+              </Button>
+            </CardFooter>
+          </Card>
+
+          {/* Pro Tier */}
+          <Card className="glass border-primary/50 hover:border-primary transition-all duration-300 relative overflow-hidden scale-105">
+            <div className="absolute top-0 right-0 bg-gradient-to-l from-primary to-accent text-primary-foreground text-xs font-semibold px-4 py-1 rounded-bl-lg">
+              POPULAR
+            </div>
+            <CardHeader>
+              <CardTitle className="text-2xl">Pro</CardTitle>
+              <CardDescription>For regular users</CardDescription>
+              <div className="pt-4">
+                <span className="text-4xl font-bold">${getPrice("pro")}</span>
+                <span className="text-muted-foreground">/month</span>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ul className="space-y-3">
+                {getTierFeatures("pro").map((feature, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                    <span className="text-sm leading-relaxed">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+            <CardFooter>
+              <Button asChild className="w-full">
+                <Link href="/sign-up">Upgrade to Pro</Link>
+              </Button>
+            </CardFooter>
+          </Card>
+
+          {/* Enterprise Tier */}
+          <Card className="glass border-border/50 hover:border-accent/50 transition-all duration-300">
+            <CardHeader>
+              <CardTitle className="text-2xl">Enterprise</CardTitle>
+              <CardDescription>For power users</CardDescription>
+              <div className="pt-4">
+                <span className="text-4xl font-bold">${getPrice("enterprise")}</span>
+                <span className="text-muted-foreground">/month</span>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ul className="space-y-3">
+                {getTierFeatures("enterprise").map((feature, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                    <span className="text-sm leading-relaxed">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+            <CardFooter>
+              <Button asChild className="w-full bg-transparent" variant="outline">
+                <Link href="/sign-up">Contact Sales</Link>
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      </div>
+    </section>
+  )
+}

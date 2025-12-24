@@ -15,19 +15,19 @@ services:
       - ENVIRONMENT=development
       - LOG_LEVEL=DEBUG
       - DEBUG=true
-    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    command: [ "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload" ]
 
   frontend:
     build:
-      context: ./frontend
+      context: ./apps/reference-ui
       dockerfile: Dockerfile
       target: production
     volumes:
-      - ./frontend:/app
+      - ./apps/reference-ui:/app
       - /app/node_modules
     environment:
       - NODE_ENV=development
-    command: ["npm", "run", "dev"]
+    command: [ "npm", "run", "dev" ]
 
   worker:
     build:
@@ -39,7 +39,7 @@ services:
     environment:
       - ENVIRONMENT=development
       - LOG_LEVEL=DEBUG
-    command: ["celery", "-A", "worker.celery_app", "worker", "--loglevel=debug", "--concurrency=1"]
+    command: [ "celery", "-A", "worker.celery_app", "worker", "--loglevel=debug", "--concurrency=1" ]
 
   db:
     ports:
