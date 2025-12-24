@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Upload, FileText, X, CheckCircle, AlertCircle } from 'lucide-react'
-import { createJob } from '../../lib/api'
+import { createJob, getCurrentUser } from '../../lib/api'
 import { Job } from '../../lib/types'
 import toast, { Toaster } from 'react-hot-toast'
 import { useAuth } from '@clerk/nextjs'
@@ -18,7 +18,29 @@ export default function UploadPage() {
   const [readingSpeed, setReadingSpeed] = useState(1.0)
   const [includeSummary, setIncludeSummary] = useState(true)
   const [conversionMode, setConversionMode] = useState('full')
+  const [userCredits, setUserCredits] = useState<number | null>(null)
+  const [creditsLoading, setCreditsLoading] = useState(true)
   const { getToken } = useAuth()
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      setCreditsLoading(true)
+      try {
+        const token = await getToken()
+        if (token) {
+          const user = await getCurrentUser(token)
+          setUserCredits(user.credit_balance)
+        }
+      } catch (e) {
+        console.error(e)
+        toast.error('Unable to load credit information. Upload may be restricted.')
+      } finally {
+        setCreditsLoading(false)
+      }
+    }
+    fetchUser()
+  }, [getToken])
+
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {
@@ -27,6 +49,8 @@ export default function UploadPage() {
     maxFiles: 1,
     maxSize: 50 * 1024 * 1024, // 50MB
     onDrop: (acceptedFiles) => {
+      // Check credits immediately on drop? Or wait for upload click?
+      // Let's warn on upload click but maybe show a banner if 0.
       if (acceptedFiles.length > 0) {
         setSelectedFile(acceptedFiles[0])
         setJobResponse(null)
@@ -36,6 +60,12 @@ export default function UploadPage() {
 
   const handleUpload = async () => {
     if (!selectedFile) return
+
+    // Client-side credit check
+    if (userCredits !== null && userCredits <= 0) {
+      toast.error('Insufficient credits. Please purchase a plan to continue.')
+      return
+    }
 
     setIsUploading(true)
     setUploadProgress(0)
@@ -284,10 +314,20 @@ export default function UploadPage() {
           <div className="mt-8 text-center">
             <button
               onClick={handleUpload}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold text-lg flex items-center space-x-2 mx-auto"
+              disabled={creditsLoading}
+              className={`px-8 py-3 rounded-lg font-semibold text-lg flex items-center space-x-2 mx-auto ${creditsLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'} text-white`}
             >
-              <Upload className="h-5 w-5" />
-              <span>Start Conversion</span>
+              {creditsLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  <span>Checking Credits...</span>
+                </>
+              ) : (
+                <>
+                  <Upload className="h-5 w-5" />
+                  <span>Start Conversion</span>
+                </>
+              )}
             </button>
           </div>
         )}

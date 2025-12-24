@@ -7,6 +7,7 @@ export interface User {
   subscription_tier: SubscriptionTier
   paddle_customer_id: string | null
   one_time_credits: number
+  credit_balance: number
   monthly_credits_used: number
   created_at: string
   updated_at: string | null

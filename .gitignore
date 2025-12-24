@@ -79,4 +79,6 @@ pdf2audiobook_variables.txt
 *.pdf
 *.mp3
 dummy.pdf
-output.mp3
+
+# --- TypeScript ---
+*.tsbuildinfo
