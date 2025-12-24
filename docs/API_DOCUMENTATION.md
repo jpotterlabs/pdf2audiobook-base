@@ -24,23 +24,33 @@ All API requests require authentication using JWT tokens obtained from Clerk aut
 
 ### Authentication Flow
 
+The recommended way to interact with the API in the frontend is using the `CreditsContext` (which wraps `useAuth` internally) or passing the token explicitly:
+
 ```javascript
-// Frontend example with Clerk
-import { useAuth } from '@clerk/nextjs';
+// Frontend example with CreditsContext
+import { useCredits } from '@/contexts/CreditsContext';
 
 function MyComponent() {
-  const { getToken } = useAuth();
+  const { credits, loading, error, refreshCredits } = useCredits();
 
-  const makeAuthenticatedRequest = async () => {
+  // 'credits' is the user's current numeric balance (e.g. 10.50)
+  
+  // To make authenticated requests, use the helper from api.ts or get token:
+  // ...
+}
+```
+
+```javascript
+// Raw Authenticated Request
+import { useAuth } from '@clerk/nextjs';
+
+const makeRequest = async () => {
+    const { getToken } = useAuth();
     const token = await getToken();
+    
     const response = await fetch('/api/v1/jobs/', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+      headers: { 'Authorization': `Bearer ${token}` }
     });
-    return response.json();
-  };
 }
 ```
 
@@ -55,17 +65,17 @@ The API automatically verifies tokens on each request. Invalid or expired tokens
 ### Jobs
 A job represents a single PDF-to-audiobook conversion request. Each job has:
 - Unique ID for tracking
-- Status (pending, processing, completed, failed)
-- Progress percentage
+- Status (`pending`, `processing`, `completed`, `failed`)
+- **Usage Stats**: `chars_processed` and `tokens_used` upon completion
+- **Cost**: `estimated_cost` deducted from user credits
 - File URLs for input/output
-- Processing options (voice, speed, etc.)
 
-### Credits & Subscriptions
-Users have credits for processing jobs:
-- **Free Tier**: 2 conversions/month
-- **Pro**: 50 conversions/month ($29.99)
-- **Enterprise**: Unlimited ($99.99)
-- **Credit Packs**: One-time purchases
+### Credits & Usage
+- **Credit Balance**: Users have a rolling `credit_balance` (USD value).
+- **Measurement**:
+    - **TTS**: Charged per character.
+    - **LLM**: Charged per token (summaries/explanations).
+- **Deduction**: Credits are deducted automatically when a job completes.
 
 ### File Storage
 - PDFs uploaded to secure AWS S3 storage
@@ -93,7 +103,8 @@ curl -X POST "https://pdf2audiobook.onrender.com/api/v1/auth/verify" \
   "user": {
     "id": "user_123",
     "email": "user@example.com",
-    "credits_remaining": 45,
+    "credit_balance": 10.50,
+    "credits_remaining": 50,  // Legacy/Plan limit
     "subscription_tier": "pro"
   }
 }
@@ -107,7 +118,7 @@ Get current user profile information.
 {
   "id": "user_123",
   "email": "user@example.com",
-  "credits_remaining": 45,
+  "credit_balance": 10.50,
   "subscription_tier": "pro",
   "total_jobs": 12,
   "created_at": "2024-01-15T10:30:00Z"

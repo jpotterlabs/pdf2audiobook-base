@@ -19,10 +19,12 @@ A production-ready SaaS platform for converting PDF documents to high-quality au
 - **Usage Tracking**: Monitor credits and subscription usage
 
 ### Business Model
-- **Free Tier**: 2 PDF conversions per month
-- **Pro Subscription**: 50 conversions per month ($29.99/month)
-- **Enterprise**: Unlimited conversions ($99.99/month)
-- **Credit Packs**: One-time purchases for occasional users
+- **Hybrid Model**: Combination of subscription tiers and flexible credit top-ups.
+- **Granular Usage Tracking**: Costs are calculated based on actual characters processed (TTS) and tokens used (LLM).
+- **Free Tier**: Limited monthly allowance.
+- **Pro/Enterprise**: Higher limits and lower rates.
+
+[👉 **Read the Credits & Usage System Guide**](docs/CREDITS_AND_USAGE.md)
 
 ## 🏗️ Architecture
 

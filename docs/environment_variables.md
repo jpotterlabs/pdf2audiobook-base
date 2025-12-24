@@ -50,16 +50,21 @@ Specifies which AI model to use via OpenRouter.
 - **Possible Values**: `google/gemini-2.0-flash-001`, `anthropic/claude-3-haiku`, etc.
 - **What it Controls**: The quality and speed of document summarization.
 
+### 7. GOOGLE_VOICE_CONFIG (The "Voice Box")
+Specific Google TTS voice IDs mapped to internal keys.
+- **Keys**: `GOOGLE_VOICE_US_FEMALE_STD`, `GOOGLE_VOICE_US_MALE_STD`, `GOOGLE_VOICE_GB_FEMALE_STD`, `GOOGLE_VOICE_GB_MALE_STD`, etc.
+- **What it Controls**: Which specific Google Cloud TTS voice is used for each gender/accent option.
+
 ---
 
 ## 📦 Storage & Infrastructure
 
-### 7. AWS_ENDPOINT_URL (The "Post Office Address")
+### 8. AWS_ENDPOINT_URL (The "Post Office Address")
 The custom URL for your S3-compatible storage provider.
 - **Possible Values**: `https://<account_id>.r2.cloudflarestorage.com` (for Cloudflare R2).
 - **What it Controls**: Redirects storage requests away from standard Amazon S3 to more cost-effective providers like R2.
 
-### 8. S3_BUCKET_NAME (The "Warehouse Name")
+### 9. S3_BUCKET_NAME (The "Warehouse Name")
 The specific bucket where PDFs and Audio files are stored.
 - **Possible Values**: e.g., `pdf2audiobook-assets`
 - **What it Controls**: Organization of file assets.
@@ -68,10 +73,15 @@ The specific bucket where PDFs and Audio files are stored.
 
 ## 💳 Billing & Payments
 
-### 9. PADDLE_ENVIRONMENT (The "Bank Branch")
+### 10. PADDLE_ENVIRONMENT (The "Bank Branch")
 Tells the Paddle integration whether to process real money or test transactions.
 - **Possible Values**: `sandbox`, `production`
 - **What it Controls**: Whether users are charged real money.
+
+### 11. NEXT_PUBLIC_DEV_BYPASS_PAYMENTS (The "Free Pass")
+A frontend-only variable to bypass payment walls during development.
+- **Possible Values**: `true`, `false`
+- **What it Controls**: Unlocks paid UI features and sends bypass headers to the backend (if backend is configured to accept them). **NEVER use in production.**
 
 ---
 
@@ -96,3 +106,5 @@ Tells the Paddle integration whether to process real money or test transactions.
 | `LOG_LEVEL` | No | The "Filter Noise" | `INFO` |
 | `MAX_FILE_SIZE_MB` | No | The "Scale Limit" | `50` |
 | `LLM_MODEL` | No | The "AI Model" | `google/gemini-2.0-flash-001` |
+| `GOOGLE_VOICE_*` | No | The "Voices" | (Hardcoded Defaults) |
+| `NEXT_PUBLIC_DEV_BYPASS_PAYMENTS` | No | The "Free Pass" | `false` |
