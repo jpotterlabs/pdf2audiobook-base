@@ -67,13 +67,14 @@ async def paddle_webhook(request: Request, db: Session = Depends(get_db)):
         # Process event
         user_service = UserService(db)
 
-        if event_type == "subscription_created":
+        if event_type in ["subscription_created", "subscription.created"]:
             user_service.handle_subscription_created(webhook_data)
-        elif event_type == "subscription_payment_succeeded":
+        elif event_type in ["subscription_payment_succeeded", "subscription.activated", "subscription.updated"]:
+            # Note: subscription.updated might need more logic to check if it was a payment
             user_service.handle_subscription_payment(webhook_data)
-        elif event_type == "subscription_cancelled":
+        elif event_type in ["subscription_cancelled", "subscription.canceled"]:
             user_service.handle_subscription_cancelled(webhook_data)
-        elif event_type == "payment_succeeded":
+        elif event_type in ["payment_succeeded", "transaction.completed"]:
             # Handle one-time payment (credit packs)
             user_service.handle_payment_succeeded(webhook_data)
         

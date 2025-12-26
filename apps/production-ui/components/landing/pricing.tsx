@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Check } from "lucide-react"
+import { Check, Loader2, Sparkles } from "lucide-react"
 import { api } from "@/lib/api/client"
 import type { Product } from "@/lib/api/types"
+import { toast } from "sonner"
 
 const FALLBACK_PRICING = {
   pro: 29,
@@ -16,6 +19,10 @@ const FALLBACK_PRICING = {
 export function Pricing() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const [upgrading, setUpgrading] = useState<string | null>(null)
+
+  const { isSignedIn, getToken } = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
     async function fetchProducts() {
@@ -34,6 +41,37 @@ export function Pricing() {
     }
     fetchProducts()
   }, [])
+
+  const handleUpgrade = async (tier: "pro" | "enterprise") => {
+    if (!isSignedIn) {
+      router.push("/sign-up")
+      return
+    }
+
+    try {
+      setUpgrading(tier)
+      const token = await getToken()
+      if (!token) throw new Error("Authentication failed")
+
+      const product = products.find((p) => p.name.toLowerCase().includes(tier.toLowerCase()))
+      if (!product) {
+        toast.error(`The ${tier} plan is currently unavailable. Please contact support.`)
+        return
+      }
+
+      const response = await api.payments.createCheckoutUrl(token, product.id)
+      if (response && response.checkout_url) {
+        window.location.href = response.checkout_url
+      } else {
+        throw new Error("Invalid checkout response")
+      }
+    } catch (error) {
+      console.error("Upgrade failed:", error)
+      toast.error("Unable to start checkout. Please check your connection.")
+    } finally {
+      setUpgrading(null)
+    }
+  }
 
   const getTierFeatures = (tier: string) => {
     const features = {
@@ -144,8 +182,19 @@ export function Pricing() {
               </ul>
             </CardContent>
             <CardFooter>
-              <Button asChild className="w-full">
-                <Link href="/sign-up">Upgrade to Pro</Link>
+              <Button
+                className="w-full"
+                onClick={() => handleUpgrade("pro")}
+                disabled={upgrading === "pro"}
+              >
+                {upgrading === "pro" ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Redirecting...
+                  </>
+                ) : (
+                  "Upgrade to Pro"
+                )}
               </Button>
             </CardFooter>
           </Card>
@@ -171,8 +220,20 @@ export function Pricing() {
               </ul>
             </CardContent>
             <CardFooter>
-              <Button asChild className="w-full bg-transparent" variant="outline">
-                <Link href="/sign-up">Contact Sales</Link>
+              <Button
+                className="w-full bg-transparent"
+                variant="outline"
+                onClick={() => handleUpgrade("enterprise")}
+                disabled={upgrading === "enterprise"}
+              >
+                {upgrading === "enterprise" ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Redirecting...
+                  </>
+                ) : (
+                  "Contact Sales"
+                )}
               </Button>
             </CardFooter>
           </Card>

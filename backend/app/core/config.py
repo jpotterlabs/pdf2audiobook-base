@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     # Paddle
     PADDLE_VENDOR_ID: Optional[int] = None
     PADDLE_VENDOR_AUTH_CODE: Optional[str] = None
+    PADDLE_API_KEY: Optional[str] = None
     PADDLE_PUBLIC_KEY: Optional[str] = None
     PADDLE_WEBHOOK_SECRET_KEY: Optional[str] = None
     PADDLE_ENVIRONMENT: str = "sandbox"  # sandbox or production
