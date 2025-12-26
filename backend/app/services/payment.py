@@ -1,55 +1,48 @@
-import requests
 from pydantic import BaseModel
-from typing import List, Dict, Any
-from hashlib import sha1
-import hmac
-import base64
+from typing import Optional, List, Dict, Any
 from loguru import logger
+from paddle_billing import Client, Environment, Options
+from paddle_billing.Notifications import Secret, Verifier
+from paddle_billing.Resources.Transactions.Operations import CreateTransaction
+from paddle_billing.Resources.Transactions.Operations.CreateTransaction import TransactionItem
 
 from app.core.config import settings
 
 class PaddleCheckoutRequest(BaseModel):
-    product_id: int
-    customer_email: str
+    product_id: str  # In Billing, this is usually the Price ID
+    customer_email: Optional[str] = None
     custom_message: str = "PDF2Audiobook Conversion Credits"
 
 class PaymentService:
     def __init__(self):
-        self.vendor_id = settings.PADDLE_VENDOR_ID
-        self.vendor_auth_code = settings.PADDLE_VENDOR_AUTH_CODE
-        self.public_key = settings.PADDLE_PUBLIC_KEY
-        self.api_endpoint = "https://vendors.paddle.com/api/2.0"
-        self.sandbox_api_endpoint = "https://sandbox-vendors.paddle.com/api/2.0"
-
-    def _get_api_url(self) -> str:
-        return self.sandbox_api_endpoint if settings.PADDLE_ENVIRONMENT == "sandbox" else self.api_endpoint
+        env = Environment.SANDBOX if settings.PADDLE_ENVIRONMENT == "sandbox" else Environment.PRODUCTION
+        self.client = Client(settings.PADDLE_API_KEY, options=Options(env)) if settings.PADDLE_API_KEY else None
+        self.webhook_secret = settings.PADDLE_WEBHOOK_SECRET_KEY
 
     def generate_checkout_url(self, checkout_request: PaddleCheckoutRequest) -> str:
         """
-        Generates a Paddle checkout URL for a given product.
+        Generates a Paddle Billing checkout URL for a given price (product).
         """
         if settings.TESTING_MODE:
             logger.info("--- MOCK PAYMENT: Generating dummy checkout URL ---")
-            return f"http://localhost:3000/mock-checkout?product_id={checkout_request.product_id}&email={checkout_request.customer_email}"
+            return f"http://localhost:3000/mock-checkout?price_id={checkout_request.product_id}&email={checkout_request.customer_email}"
 
-        url = f"{self._get_api_url()}/product/generate_pay_link"
-        payload = {
-            "vendor_id": self.vendor_id,
-            "vendor_auth_code": self.vendor_auth_code,
-            "product_id": checkout_request.product_id,
-            "customer_email": checkout_request.customer_email,
-            "custom_message": checkout_request.custom_message,
-            "passthrough": f'{{"user_email": "{checkout_request.customer_email}"}}' # Example passthrough
-        }
+        if not self.client:
+            raise Exception("Paddle API key not configured")
+
+        # Create a transaction for the checkout
+        # Note: In a real production app, you might want to associate this with a Customer ID if known
+        transaction = self.client.transactions.create(CreateTransaction(
+            items=[
+                TransactionItem(price_id=checkout_request.product_id, quantity=1)
+            ],
+            # Pass email in custom data or use it to find/create customer
+            custom_data={"user_email": checkout_request.customer_email} if checkout_request.customer_email else None
+        ))
         
-        response = requests.post(url, json=payload, timeout=30)
-        response.raise_for_status()
-        
-        data = response.json()
-        if data.get("success"):
-            return data["response"]["url"]
-        else:
-            raise Exception(f"Paddle API error: {data.get('error', {}).get('message', 'Unknown error')}")
+        # Construct the checkout URL using the transaction ID
+        base_url = "https://sandbox-checkout.paddle.com" if settings.PADDLE_ENVIRONMENT == "sandbox" else "https://checkout.paddle.com"
+        return f"{base_url}/checkout/transaction/{transaction.id}"
 
     def verify_webhook_signature(self, request_body: bytes, signature: str) -> bool:
         """
@@ -59,39 +52,21 @@ class PaymentService:
             logger.info("--- MOCK PAYMENT: Skipping webhook verification ---")
             return True
 
-        if not signature:
-            return False
-
-        secret_key = settings.PADDLE_WEBHOOK_SECRET_KEY
-        if not secret_key:
-            # If no secret key is configured, we cannot verify. 
-            # (Unless falling back to old method, but user asked for modern)
-            logger.warning("--- WARNING: PADDLE_WEBHOOK_SECRET_KEY not set. Verification failing. ---")
+        if not signature or not self.webhook_secret:
+            logger.warning("--- WARNING: Signature or Webhook Secret missing. ---")
             return False
 
         try:
-            # Modern Paddle Billing Verification
-            from paddle_billing.Notifications import Secret, Verifier
-            
-            # The SDK expects a Request object with 'headers' and 'body' attributes.
-            # We create a simple class todduck-type expectation. 
+            # The SDK expects a Request-like object. 
+            # We create a simple class to satisfy the interface.
             class SDKRequest:
                 def __init__(self, body_bytes, headers_dict):
                     self.body = body_bytes
                     self.headers = headers_dict
             
-            # SDK's Verifier internal logic:
-            # raw_body = request.body.decode("utf-8")
-            # So we pass the bytes directly in .body
             req = SDKRequest(request_body, {"Paddle-Signature": signature})
+            return Verifier().verify(req, Secret(self.webhook_secret))
             
-            verifier = Verifier()
-            # verify(request, secrets)
-            return verifier.verify(req, Secret(secret_key))
-            
-        except ImportError:
-            logger.error("--- ERROR: paddle-python-sdk not installed. cannot verify. ---")
-            return False
         except Exception as e:
             logger.error(f"--- Webhook verification failed: {e} ---")
             return False
