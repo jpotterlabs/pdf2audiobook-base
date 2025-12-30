@@ -7,6 +7,10 @@ from paddle_billing.Resources.Transactions.Operations.CreateTransaction import C
 
 from app.core.config import settings
 
+class PaddlePriceNotFoundError(Exception):
+    """Raised when no prices are found for a Paddle product."""
+    pass
+
 class PaddleCheckoutRequest(BaseModel):
     product_id: str  # In Billing, this is usually the Price ID
     customer_email: Optional[str] = None
@@ -29,19 +33,34 @@ class PaymentService:
         if not self.client:
             raise Exception("Paddle API key not configured")
 
-        # Create a transaction for the checkout
-        # Note: In a real production app, you might want to associate this with a Customer ID if known
+        # 1. Resolve Price ID if a Product ID (pro_...) was provided
+        price_id = checkout_request.product_id
+        if price_id.startswith("pro_"):
+            logger.info(f"Resolving Price ID for Product: {price_id}")
+            # Import filter inside to avoid unnecessary module loads
+            from paddle_billing.Resources.Prices.Operations import ListPrices
+            
+            prices = list(self.client.prices.list(ListPrices(product_ids=[price_id])))
+            if not prices:
+                raise PaddlePriceNotFoundError(f"No prices found for Paddle product {price_id}")
+            
+            # Select the first active price
+            # In a more complex setup, you might filter by currency or frequency
+            price_id = prices[0].id
+            logger.info(f"Resolved to Price ID: {price_id}")
+
+        # 2. Create a transaction for the checkout
         transaction = self.client.transactions.create(CreateTransaction(
             items=[
-                TransactionCreateItem(price_id=checkout_request.product_id, quantity=1)
+                TransactionCreateItem(price_id=price_id, quantity=1)
             ],
-            # Pass email in custom data or use it to find/create customer
             custom_data={"user_email": checkout_request.customer_email} if checkout_request.customer_email else None
         ))
         
-        # Construct the checkout URL using the transaction ID
+        # 3. Construct the checkout URL using the transaction ID
         base_url = "https://sandbox-checkout.paddle.com" if settings.PADDLE_ENVIRONMENT == "sandbox" else "https://checkout.paddle.com"
         return f"{base_url}/checkout/transaction/{transaction.id}"
+
 
     def verify_webhook_signature(self, request_body: bytes, signature: str) -> bool:
         """

@@ -66,9 +66,9 @@ def run_db_fixes():
         # 6. Seed products
         logger.info("Seeding products...")
         products = [
-            ('free_tier', 'Free Plan', 'Ideal for individuals starting their audiobook journey. 50 jobs per month included.', 0.00, 'USD', 50, 'free', 'subscription'),
-            ('pro_monthly', 'Pro Plan', 'Power users who need more conversions and premium features. 50 jobs per month with priority processing.', 19.99, 'USD', 50, 'pro', 'subscription'),
-            ('enterprise_monthly', 'Enterprise', 'Unlimited conversions and dedicated support for organizations.', 99.99, 'USD', 9999, 'enterprise', 'subscription')
+            ('pro_01k5c6wwxw8fgxx6ad61s0vd78', 'The Discover', 'Pay as you go. Estimate cost based on characters and voices.', 0.00, 'USD', 0, 'free', 'one_time'),
+            ('pro_01k5c7648e8ss1bak485ajctfp', 'The Research', '$9.99/mo. 3 audiobooks, 300k std / 100k premium chars, 1 summary/explanation per book.', 9.99, 'USD', 3, 'pro', 'subscription'),
+            ('pro_01k5c7dgx4ayf68pfrxv6q586h', 'The Intelligence', '$19.99/mo. 7 audiobooks, 500k std / 250k premium chars, 5 summaries/explanations total.', 19.99, 'USD', 7, 'enterprise', 'subscription')
         ]
         for pid, name, desc, price, curr, credits, tier, ptype in products:
             logger.info(f"Upserting product: {name}")
@@ -79,6 +79,7 @@ def run_db_fixes():
                     name = EXCLUDED.name,
                     description = EXCLUDED.description,
                     price = EXCLUDED.price,
+                    currency = EXCLUDED.currency,
                     credits_included = EXCLUDED.credits_included,
                     subscription_tier = EXCLUDED.subscription_tier,
                     type = EXCLUDED.type,
