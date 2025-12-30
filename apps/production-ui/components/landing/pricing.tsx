@@ -54,7 +54,7 @@ export function Pricing() {
       const token = await getToken()
       if (!token) throw new Error("Authentication failed")
 
-      const product = products.find((p) => p.subscription_tier === tier)
+      const product = products.find((p: Product) => p.subscription_tier === tier)
       if (!product) {
         toast.error(`The ${tier} plan is currently unavailable. Please contact support.`)
         return
@@ -99,7 +99,7 @@ export function Pricing() {
   }
 
   const getPrice = (tier: "free" | "pro" | "enterprise") => {
-    const product = products.find((p) => p.subscription_tier === tier)
+    const product = products.find((p: Product) => p.subscription_tier === tier)
     return product?.price !== undefined ? product.price : FALLBACK_PRICING[tier]
   }
 

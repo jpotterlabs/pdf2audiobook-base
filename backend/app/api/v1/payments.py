@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Union, Annotated
 from sqlalchemy.orm import Session
 from loguru import logger
 
@@ -17,28 +17,25 @@ router = APIRouter()
 @router.get(
     "/products",
     response_model=List[Product],
-    summary="List All Available Products",
-    description="Retrieves a list of all active products and subscription plans.",
+    summary="List all available products",
+    description="Returns a list of all active products and their details.",
 )
-async def get_products(db: Session = Depends(get_db)):
+async def get_products(db: Annotated[Session, Depends(get_db)]):
     """
-    Fetches all active products available for purchase.
+    Retrieves all products that are currently marked as active.
     """
-    return db.query(ProductModel).filter(ProductModel.is_active == True).all()
+    products = db.query(ProductModel).filter(ProductModel.is_active == True).all()
+    return products
 
 
 class CheckoutURLRequest(BaseModel):
-    product_id: int = Field(
-        ..., json_schema_extra={"example": 1}, description="The internal ID of the product to purchase."
+    product_id: Union[str, int] = Field(
+        ..., json_schema_extra={"example": 1}, description="The internal ID (int) or Paddle ID (string) of the product to purchase."
     )
 
 
 class CheckoutURLResponse(BaseModel):
-    checkout_url: str = Field(
-        ...,
-        json_schema_extra={"example": "https://sandbox-vendors.paddle.com/checkout/user/123/hash?redirect_url=..."},
-        description="The generated Paddle checkout URL.",
-    )
+    checkout_url: str = Field(..., description="The unique Paddle checkout URL.")
 
 
 @router.post(
@@ -49,16 +46,24 @@ class CheckoutURLResponse(BaseModel):
 )
 async def create_checkout_url(
     request: CheckoutURLRequest, 
-    current_user: UserModel = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: Annotated[UserModel, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)]
 ):
     """
     Generates a Paddle checkout URL for the authenticated user to purchase a product.
 
-    - **product_id**: The internal database ID of the product to buy.
+    - **product_id**: The internal database ID (int) or Paddle ID (string) of the product to buy.
     """
     # 1. Look up the product in our database
-    product = db.query(ProductModel).filter(ProductModel.id == request.product_id).first()
+    if isinstance(request.product_id, int):
+        product = db.query(ProductModel).filter(ProductModel.id == request.product_id).first()
+    else:
+        # If it's a string, it might be a Paddle Product ID (pro_...) or a numeric ID passed as a string
+        if request.product_id.isdigit():
+             product = db.query(ProductModel).filter(ProductModel.id == int(request.product_id)).first()
+        else:
+             product = db.query(ProductModel).filter(ProductModel.paddle_product_id == request.product_id).first()
+
     if not product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
