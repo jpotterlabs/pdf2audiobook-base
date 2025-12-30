@@ -199,10 +199,10 @@ export function Pricing() {
             </CardFooter>
           </Card>
 
-          {/* Enterprise Tier - The Inteligence */}
+          {/* Enterprise Tier - The Intelligence */}
           <Card className="glass border-border/50 hover:border-accent/50 transition-all duration-300">
             <CardHeader>
-              <CardTitle className="text-2xl">The Inteligence</CardTitle>
+              <CardTitle className="text-2xl">The Intelligence</CardTitle>
               <CardDescription>Power users</CardDescription>
               <div className="pt-4">
                 <span className="text-4xl font-bold">${getPrice("enterprise")}</span>

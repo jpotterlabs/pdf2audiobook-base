@@ -68,7 +68,7 @@ def run_db_fixes():
         products = [
             ('pro_01k5c6wwxw8fgxx6ad61s0vd78', 'The Discover', 'Pay as you go. Estimate cost based on characters and voices.', 0.00, 'USD', 0, 'free', 'one_time'),
             ('pro_01k5c7648e8ss1bak485ajctfp', 'The Research', '$9.99/mo. 3 audiobooks, 300k std / 100k premium chars, 1 summary/explanation per book.', 9.99, 'USD', 3, 'pro', 'subscription'),
-            ('pro_01k5c7dgx4ayf68pfrxv6q586h', 'The Inteligence', '$19.99/mo. 7 audiobooks, 500k std / 250k premium chars, 5 summaries/explanations total.', 19.99, 'USD', 7, 'enterprise', 'subscription')
+            ('pro_01k5c7dgx4ayf68pfrxv6q586h', 'The Intelligence', '$19.99/mo. 7 audiobooks, 500k std / 250k premium chars, 5 summaries/explanations total.', 19.99, 'USD', 7, 'enterprise', 'subscription')
         ]
         for pid, name, desc, price, curr, credits, tier, ptype in products:
             logger.info(f"Upserting product: {name}")
