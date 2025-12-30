@@ -12,8 +12,9 @@ import type { Product } from "@/lib/api/types"
 import { toast } from "sonner"
 
 const FALLBACK_PRICING = {
-  pro: 29,
-  enterprise: 99,
+  free: 0,
+  pro: 9.99,
+  enterprise: 19.99,
 }
 
 export function Pricing() {
@@ -53,7 +54,7 @@ export function Pricing() {
       const token = await getToken()
       if (!token) throw new Error("Authentication failed")
 
-      const product = products.find((p) => p.name.toLowerCase().includes(tier.toLowerCase()))
+      const product = products.find((p) => p.subscription_tier === tier)
       if (!product) {
         toast.error(`The ${tier} plan is currently unavailable. Please contact support.`)
         return
@@ -75,32 +76,31 @@ export function Pricing() {
 
   const getTierFeatures = (tier: string) => {
     const features = {
-      free: ["3 conversions per month", "Basic voices (OpenAI)", "Standard processing speed", "Max 10 pages per PDF"],
+      free: [
+        "Pay as you go",
+        "Estimated cost per book",
+        "Standard & Premium voices",
+        "Summary or Explanation add-ons",
+      ],
       pro: [
-        "50 conversions per month",
-        "All premium voices",
-        "Priority processing",
-        "Unlimited pages",
-        "AI summaries included",
-        "Custom reading speed",
+        "3 audiobook conversions /mo",
+        "300k std / 100k premium chars",
+        "Summary or Explanation included",
+        "Standard processing speed",
       ],
       enterprise: [
-        "Unlimited conversions",
-        "All premium voices",
-        "Highest priority",
-        "Unlimited pages",
-        "AI summaries included",
-        "API access",
-        "Dedicated support",
-        "Custom integrations",
+        "7 audiobook conversions /mo",
+        "500k std / 250k premium chars",
+        "5 Summaries or Explanations",
+        "Priority processing",
       ],
     }
     return features[tier as keyof typeof features] || []
   }
 
-  const getPrice = (tier: "pro" | "enterprise") => {
-    const product = products.find((p) => p.name.toLowerCase().includes(tier))
-    return product?.price || FALLBACK_PRICING[tier]
+  const getPrice = (tier: "free" | "pro" | "enterprise") => {
+    const product = products.find((p) => p.subscription_tier === tier)
+    return product?.price !== undefined ? product.price : FALLBACK_PRICING[tier]
   }
 
   if (loading) {
@@ -131,14 +131,14 @@ export function Pricing() {
 
         {/* Pricing cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {/* Free Tier */}
+          {/* Free Tier - The Discover */}
           <Card className="glass border-border/50 hover:border-primary/50 transition-all duration-300">
             <CardHeader>
-              <CardTitle className="text-2xl">Free</CardTitle>
-              <CardDescription>Perfect for trying out</CardDescription>
+              <CardTitle className="text-2xl">The Discover</CardTitle>
+              <CardDescription>Pay as you go</CardDescription>
               <div className="pt-4">
                 <span className="text-4xl font-bold">$0</span>
-                <span className="text-muted-foreground">/month</span>
+                <span className="text-muted-foreground">/start</span>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -158,14 +158,14 @@ export function Pricing() {
             </CardFooter>
           </Card>
 
-          {/* Pro Tier */}
+          {/* Pro Tier - The Research */}
           <Card className="glass border-primary/50 hover:border-primary transition-all duration-300 relative overflow-hidden scale-105">
             <div className="absolute top-0 right-0 bg-gradient-to-l from-primary to-accent text-primary-foreground text-xs font-semibold px-4 py-1 rounded-bl-lg">
               POPULAR
             </div>
             <CardHeader>
-              <CardTitle className="text-2xl">Pro</CardTitle>
-              <CardDescription>For regular users</CardDescription>
+              <CardTitle className="text-2xl">The Research</CardTitle>
+              <CardDescription>Personal use</CardDescription>
               <div className="pt-4">
                 <span className="text-4xl font-bold">${getPrice("pro")}</span>
                 <span className="text-muted-foreground">/month</span>
@@ -199,11 +199,11 @@ export function Pricing() {
             </CardFooter>
           </Card>
 
-          {/* Enterprise Tier */}
+          {/* Enterprise Tier - The Inteligence */}
           <Card className="glass border-border/50 hover:border-accent/50 transition-all duration-300">
             <CardHeader>
-              <CardTitle className="text-2xl">Enterprise</CardTitle>
-              <CardDescription>For power users</CardDescription>
+              <CardTitle className="text-2xl">The Inteligence</CardTitle>
+              <CardDescription>Power users</CardDescription>
               <div className="pt-4">
                 <span className="text-4xl font-bold">${getPrice("enterprise")}</span>
                 <span className="text-muted-foreground">/month</span>

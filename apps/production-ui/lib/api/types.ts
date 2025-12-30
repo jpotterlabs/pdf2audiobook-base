@@ -56,6 +56,7 @@ export interface Product {
   type: ProductType
   paddle_product_id: string
   is_active: boolean
+  subscription_tier: SubscriptionTier | null
   created_at: string
   updated_at?: string | null
 }
