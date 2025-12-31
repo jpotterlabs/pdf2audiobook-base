@@ -44,8 +44,8 @@ export function UploadForm() {
     resolver: zodResolver(uploadSchema),
     defaultValues: {
       file: null,
-      voice_provider: "openai",
-      voice_type: "alloy",
+      voice_provider: "google",
+      voice_type: "en-US-Wavenet-C",
       reading_speed: 1.0,
       include_summary: false,
       conversion_mode: "full",
@@ -151,14 +151,10 @@ export function UploadForm() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="glass-strong">
-                {Object.entries(PROVIDER_NAMES).map(([key, name]) => (
-                  <SelectItem key={key} value={key}>
-                    {name}
-                  </SelectItem>
-                ))}
+                <SelectItem value="google">Google Cloud TTS</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">Choose the AI voice technology provider</p>
+            <p className="text-xs text-muted-foreground">High-quality voices powered by Google Cloud</p>
           </div>
 
           <div className="space-y-2">
@@ -168,7 +164,7 @@ export function UploadForm() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="glass-strong">
-                {VOICE_OPTIONS[voiceProvider].map((voice) => (
+                {VOICE_OPTIONS[voiceProvider as VoiceProvider].map((voice: any) => (
                   <SelectItem key={voice.id} value={voice.id}>
                     <div>
                       <div>{voice.name}</div>
