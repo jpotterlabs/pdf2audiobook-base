@@ -42,7 +42,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+  const env = process.env.NEXT_PUBLIC_ENVIRONMENT || "sandbox"
+  const publishableKey =
+    env === "production"
+      ? process.env.NEXT_PUBLIC_PROD_CLERK_PUBLISHABLE_KEY
+      : process.env.NEXT_PUBLIC_SANDBOX_CLERK_PUBLISHABLE_KEY
 
   return (
     <html lang="en" suppressHydrationWarning>
