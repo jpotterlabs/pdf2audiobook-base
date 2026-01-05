@@ -14,16 +14,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"  # development, staging, production
     DEBUG: bool = False
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # Diagnostic logging for voice environment variables
-        import logging
-        logger = logging.getLogger(__name__)
-        voice_vars = {k: v for k, v in os.environ.items() if k.startswith("GOOGLE_VOICE_")}
-        if voice_vars:
-            logger.info(f"Detected Google Voice Env Vars: {voice_vars}")
-        else:
-            logger.warning("No GOOGLE_VOICE_ environment variables detected at startup.")
+
     TESTING_MODE: bool = False
 
     # Database
@@ -54,6 +45,14 @@ class Settings(BaseSettings):
     CLERK_JWT_ISSUER: Optional[str] = None
     CLERK_JWT_AUDIENCE: Optional[str] = None
 
+    PROD_CLERK_PEM_PUBLIC_KEY: Optional[str] = None
+    PROD_CLERK_JWT_ISSUER: Optional[str] = None
+    PROD_CLERK_JWT_AUDIENCE: Optional[str] = None
+
+    SANDBOX_CLERK_PEM_PUBLIC_KEY: Optional[str] = None
+    SANDBOX_CLERK_JWT_ISSUER: Optional[str] = None
+    SANDBOX_CLERK_JWT_AUDIENCE: Optional[str] = None
+
     # Paddle
     PADDLE_VENDOR_ID: Optional[int] = None
     PADDLE_VENDOR_AUTH_CODE: Optional[str] = None
@@ -61,6 +60,69 @@ class Settings(BaseSettings):
     PADDLE_PUBLIC_KEY: Optional[str] = None
     PADDLE_WEBHOOK_SECRET_KEY: Optional[str] = None
     PADDLE_ENVIRONMENT: str = "sandbox"  # sandbox or production
+
+    PROD_PADDLE_VENDOR_ID: Optional[int] = None
+    PROD_PADDLE_API_KEY: Optional[str] = None
+    PROD_PADDLE_WEBHOOK_SECRET_KEY: Optional[str] = None
+
+    SANDBOX_PADDLE_VENDOR_ID: Optional[int] = None
+    SANDBOX_PADDLE_API_KEY: Optional[str] = None
+    SANDBOX_PADDLE_WEBHOOK_SECRET_KEY: Optional[str] = None
+
+    # Frontend URLs for CORS
+    PROD_FRONTEND_URL: str = "https://pdf2audiobook.vercel.app"
+    SANDBOX_FRONTEND_URL: str = "http://localhost:3000"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        
+        # --- Environment Toggle Logic ---
+        if self.ENVIRONMENT.lower() == "production":
+            logger.info("🚀 Loading PRODUCTION configuration")
+            
+            # Paddle
+            if self.PROD_PADDLE_API_KEY: self.PADDLE_API_KEY = self.PROD_PADDLE_API_KEY
+            if self.PROD_PADDLE_VENDOR_ID: self.PADDLE_VENDOR_ID = self.PROD_PADDLE_VENDOR_ID
+            if self.PROD_PADDLE_WEBHOOK_SECRET_KEY: self.PADDLE_WEBHOOK_SECRET_KEY = self.PROD_PADDLE_WEBHOOK_SECRET_KEY
+            self.PADDLE_ENVIRONMENT = "production"
+
+            # Clerk
+            if self.PROD_CLERK_PEM_PUBLIC_KEY: self.CLERK_PEM_PUBLIC_KEY = self.PROD_CLERK_PEM_PUBLIC_KEY
+            if self.PROD_CLERK_JWT_ISSUER: self.CLERK_JWT_ISSUER = self.PROD_CLERK_JWT_ISSUER
+            if self.PROD_CLERK_JWT_AUDIENCE: self.CLERK_JWT_AUDIENCE = self.PROD_CLERK_JWT_AUDIENCE
+
+            # CORS
+            if self.PROD_FRONTEND_URL and self.PROD_FRONTEND_URL not in self.ALLOWED_HOSTS:
+                if isinstance(self.ALLOWED_HOSTS, list):
+                    self.ALLOWED_HOSTS.append(self.PROD_FRONTEND_URL)
+        
+        else: # sandbox/development
+            logger.info("🧪 Loading SANDBOX/DEV configuration")
+
+            # Paddle
+            if self.SANDBOX_PADDLE_API_KEY: self.PADDLE_API_KEY = self.SANDBOX_PADDLE_API_KEY
+            if self.SANDBOX_PADDLE_VENDOR_ID: self.PADDLE_VENDOR_ID = self.SANDBOX_PADDLE_VENDOR_ID
+            if self.SANDBOX_PADDLE_WEBHOOK_SECRET_KEY: self.PADDLE_WEBHOOK_SECRET_KEY = self.SANDBOX_PADDLE_WEBHOOK_SECRET_KEY
+            self.PADDLE_ENVIRONMENT = "sandbox"
+
+            # Clerk
+            if self.SANDBOX_CLERK_PEM_PUBLIC_KEY: self.CLERK_PEM_PUBLIC_KEY = self.SANDBOX_CLERK_PEM_PUBLIC_KEY
+            if self.SANDBOX_CLERK_JWT_ISSUER: self.CLERK_JWT_ISSUER = self.SANDBOX_CLERK_JWT_ISSUER
+            if self.SANDBOX_CLERK_JWT_AUDIENCE: self.CLERK_JWT_AUDIENCE = self.SANDBOX_CLERK_JWT_AUDIENCE
+
+            # CORS
+            if self.SANDBOX_FRONTEND_URL and self.SANDBOX_FRONTEND_URL not in self.ALLOWED_HOSTS:
+                 if isinstance(self.ALLOWED_HOSTS, list):
+                    self.ALLOWED_HOSTS.append(self.SANDBOX_FRONTEND_URL)
+
+        # Diagnostic logging for voice environment variables
+        import logging
+        logger = logging.getLogger(__name__)
+        voice_vars = {k: v for k, v in os.environ.items() if k.startswith("GOOGLE_VOICE_")}
+        if voice_vars:
+            logger.info(f"Detected Google Voice Env Vars: {voice_vars}")
+        else:
+            logger.warning("No GOOGLE_VOICE_ environment variables detected at startup.")
 
     # OpenAI
     OPENAI_API_KEY: Optional[str] = None

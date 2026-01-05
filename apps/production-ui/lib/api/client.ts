@@ -1,6 +1,10 @@
 // API client with Clerk authentication
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+const ENV = process.env.NEXT_PUBLIC_ENVIRONMENT || "sandbox"
+const API_BASE_URL =
+  ENV === "production"
+    ? process.env.NEXT_PUBLIC_PROD_API_URL || "https://api.pdf2audiobook.com"
+    : process.env.NEXT_PUBLIC_SANDBOX_API_URL || "http://localhost:8000"
 
 interface ApiError {
   detail?: string | Array<{ msg: string }>
