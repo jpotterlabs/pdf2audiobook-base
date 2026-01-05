@@ -114,7 +114,7 @@ export function Pricing() {
   }
 
   return (
-    <section id="pricing" className="py-24 px-4 relative">
+    <section className="py-24 px-4 relative">
       <div className="max-w-7xl mx-auto">
         {/* Section header */}
         <div className="text-center mb-16 space-y-4">
