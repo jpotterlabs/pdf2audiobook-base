@@ -26,7 +26,12 @@ interface JobCardProps {
   onDelete: (jobId: number) => void
 }
 
+import { useUser } from "@clerk/nextjs"
+
 export function JobCard({ job, onDelete }: JobCardProps) {
+  const { user } = useUser()
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === "potter.jason@gmail.com"
+
   const [deleting, setDeleting] = useState(false)
   const [showPlayer, setShowPlayer] = useState(false)
 
@@ -113,7 +118,7 @@ export function JobCard({ job, onDelete }: JobCardProps) {
             <span className="font-medium">{job.reading_speed}x</span>
           </div>
 
-          {job.estimated_cost > 0 && (
+          {isAdmin && job.estimated_cost > 0 && (
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground flex items-center gap-1">
                 <DollarSign className="w-3 h-3" />
