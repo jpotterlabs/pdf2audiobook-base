@@ -27,7 +27,27 @@ def sync_products():
 
     try:
         # Fetch all products (filtering locally if needed, or using correct SDK params)
-        paddle_products = list(client.products.list(ListProducts()))
+        # Fetch all products
+        # Fallback: If ListProducts fails (permissions), try listing via Prices
+        try:
+             paddle_products = list(client.products.list(ListProducts()))
+        except Exception as e:
+            logger.warning(f"ListProducts failed ({e}). Attempting fallback via ListPrices...")
+            from paddle_billing.Resources.Prices.Operations import ListPrices
+            # Try to fetch prices including the product details
+            prices = list(client.prices.list(ListPrices(include=["product"])))
+            
+            # Extract unique products from prices
+            seen_ids = set()
+            paddle_products = []
+            for price in prices:
+                if price.product_id not in seen_ids and price.product:
+                    seen_ids.add(price.product_id)
+                    paddle_products.append(price.product)
+            
+            if not paddle_products:
+                logger.error("Fallback failed: No products found via prices.")
+                return
         
         if not paddle_products:
             logger.warning("No active products found in Paddle!")
