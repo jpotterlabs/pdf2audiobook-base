@@ -10,14 +10,14 @@ export default function TermsPage() {
             <section className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">1. Introduction</h2>
                 <p className="mb-4">
-                    Welcome to PDF2Audiobook. By accessing our website and using our services, you agree to be bound by these Terms and Conditions.
+                    Welcome to potterlabs. By accessing our website and using our services, you agree to be bound by these Terms and Conditions.
                 </p>
             </section>
 
             <section className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">2. Company Information</h2>
                 <p className="mb-4">
-                    PDF2Audiobook ("we", "us", "our") provides AI-powered PDF to audiobook conversion services.
+                    potterlabs ("we", "us", "our") provides AI-powered PDF to audiobook conversion services.
                 </p>
             </section>
 
@@ -39,7 +39,20 @@ export default function TermsPage() {
             </section>
 
             <section className="mb-8">
-                <h2 className="text-2xl font-semibold mb-4">5. Contact</h2>
+                <h2 className="text-2xl font-semibold mb-4">5. Voice Generation & AI Policy</h2>
+                <div className="bg-muted/50 p-4 rounded-lg border">
+                    <p className="mb-2 font-medium">No Impersonation Policy</p>
+                    <p className="mb-4">
+                        Our platform provides generic, stock AI voices for the sole purpose of reading text content. We do <strong>not</strong> provide features that allow users to clone, impersonate, or replicate the voice of any specific individual (including celebrities, public figures, or private citizens).
+                    </p>
+                    <p>
+                        All voices available on the platform are pre-trained generic voices. No real person's voice or likeness is simulated without explicit consent. Users are prohibited from attempting to use the service to generate misleading or impersonating audio.
+                    </p>
+                </div>
+            </section>
+
+            <section className="mb-8">
+                <h2 className="text-2xl font-semibold mb-4">6. Contact</h2>
                 <p>
                     For any questions regarding these terms, please contact us at support@pdf2audiobook.xyz.
                 </p>
