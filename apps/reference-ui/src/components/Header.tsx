@@ -6,7 +6,7 @@ import { FileText, Upload, History, CreditCard, Coins, Loader2 } from 'lucide-re
 import { useCredits } from '../contexts/CreditsContext'
 
 export default function Header() {
-  const { credits, loading, error: creditsError } = useCredits()
+  const { credits, user, loading, error: creditsError } = useCredits()
 
   return (
     <header className="bg-white shadow-sm border-b">
@@ -66,7 +66,12 @@ export default function Header() {
                 </div>
               )}
               {credits !== null && !creditsError && (
-                <div className="hidden sm:flex items-center px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium border border-blue-100 mr-2">
+                <div className="flex items-center px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium border border-blue-100 mr-2">
+                  <div className="flex items-center gap-1.5 border-r border-blue-200 pr-2 mr-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider">
+                      {user?.subscription_tier || 'Free'}
+                    </span>
+                  </div>
                   <Coins className="h-4 w-4 mr-1.5" />
                   {credits} Credits
                 </div>
