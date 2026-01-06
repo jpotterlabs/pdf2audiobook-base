@@ -139,7 +139,14 @@ async def get_user_jobs(
     
     # Generate presigned URLs for completed jobs
     storage_service = StorageService()
+    is_admin = settings.ADMIN_EMAIL and current_user.email == settings.ADMIN_EMAIL
+
     for job in jobs:
+        # Security: Hide cost for non-admins
+        if not is_admin:
+            job.estimated_cost = 0 # Or None if schema allows, but schema says number. Hiding by setting to 0 implies "no cost" or "hidden". 
+            # Better: The UI checks for > 0. So 0 works to hide it. 
+        
         if job.status == JobStatus.completed and job.audio_s3_key:
             job.audio_s3_url = storage_service.generate_presigned_url(job.audio_s3_key)
             

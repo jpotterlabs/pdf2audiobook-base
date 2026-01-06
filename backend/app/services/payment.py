@@ -40,7 +40,12 @@ class PaymentService:
             # Import filter inside to avoid unnecessary module loads
             from paddle_billing.Resources.Prices.Operations import ListPrices
             
-            prices = list(self.client.prices.list(ListPrices(product_ids=[price_id])))
+            # Use safe listing (no filters) and filter in Python, matching sync logic (see sync_products.py).
+            # TODO: Long-term, request proper Paddle API permissions to use `ListPrices(product_ids=[...])` directly.
+            # Current API key returns "You aren't permitted..." error when filtering by product_id.
+            all_prices = list(self.client.prices.list(ListPrices()))
+            prices = [p for p in all_prices if p.product_id == price_id]
+
             if not prices:
                 raise PaddlePriceNotFoundError(f"No prices found for Paddle product {price_id}")
             

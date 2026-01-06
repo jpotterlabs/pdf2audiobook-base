@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     # Environment
     ENVIRONMENT: str = "development"  # development, staging, production
     DEBUG: bool = False
+    
+    # Admin
+    ADMIN_EMAIL: Optional[str] = None
 
 
     TESTING_MODE: bool = False
