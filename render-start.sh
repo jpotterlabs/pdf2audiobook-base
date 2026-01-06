@@ -68,6 +68,9 @@ echo "DATABASE_URL: ${DATABASE_URL:0:20}..."
 echo "Running database fixes (normalization and seeding)..."
 uv run python backend/seed_db.py
 
+echo "Syncing products from Paddle..."
+uv run python backend/sync_products.py
+
 # Start the application
 echo "Starting FastAPI application..."
 # Use 1 worker to fit within Render's 512MB memory limit
