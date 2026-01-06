@@ -9,11 +9,7 @@ import { useCredits } from "@/lib/contexts/credits-context"
 import { useState } from "react"
 
 export function Header() {
-  const env = process.env.NEXT_PUBLIC_ENVIRONMENT || "sandbox"
-  const hasClerkKeys =
-    env === "production"
-      ? !!process.env.NEXT_PUBLIC_PROD_CLERK_PUBLISHABLE_KEY
-      : !!process.env.NEXT_PUBLIC_SANDBOX_CLERK_PUBLISHABLE_KEY
+  const hasClerkKeys = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 glass-strong">
