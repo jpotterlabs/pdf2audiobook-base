@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useAuth } from "@clerk/nextjs"
+import Link from "next/link"
 import { api } from "@/lib/api/client"
 import { useCredits } from "@/lib/contexts/credits-context"
 import type { Job } from "@/lib/api/types"
@@ -215,7 +216,7 @@ export function JobsDashboard() {
               Upload your first PDF to get started. Your converted audiobooks will appear here.
             </p>
             <Button asChild>
-              <a href="/upload">Upload PDF</a>
+              <Link href="/upload">Upload PDF</Link>
             </Button>
           </div>
         </div>
