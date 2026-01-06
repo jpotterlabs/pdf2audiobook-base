@@ -22,7 +22,7 @@ export function Pricing() {
   const [loading, setLoading] = useState(true)
   const [upgrading, setUpgrading] = useState<string | null>(null)
 
-  const { isSignedIn, getToken } = useAuth()
+  const { isSignedIn, getToken, isLoaded } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -44,6 +44,8 @@ export function Pricing() {
   }, [])
 
   const handleUpgrade = async (tier: "pro" | "enterprise") => {
+    if (!isLoaded) return
+
     if (!isSignedIn) {
       router.push("/sign-up")
       return

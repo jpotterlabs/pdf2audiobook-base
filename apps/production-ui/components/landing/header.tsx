@@ -14,14 +14,6 @@ export function Header() {
     env === "production"
       ? !!process.env.NEXT_PUBLIC_PROD_CLERK_PUBLISHABLE_KEY
       : !!process.env.NEXT_PUBLIC_SANDBOX_CLERK_PUBLISHABLE_KEY
-  const { user, credits, loading, refreshCredits } = useCredits()
-  const [refreshing, setRefreshing] = useState(false)
-
-  const handleRefresh = async () => {
-    setRefreshing(true)
-    await refreshCredits()
-    setRefreshing(false)
-  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 glass-strong">
@@ -30,8 +22,7 @@ export function Header() {
           <div className="container flex items-center gap-2 text-sm text-yellow-500">
             <AlertCircle className="w-4 h-4" />
             <span>
-              Authentication not configured. Add NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY to enable
-              sign-in.
+              Authentication not configured. Add NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY to enable sign-in.
             </span>
           </div>
         </div>
@@ -61,45 +52,7 @@ export function Header() {
 
         <div className="flex items-center gap-4">
           {hasClerkKeys ? (
-            <>
-              <SignedOut>
-                <Button asChild variant="ghost" size="sm">
-                  <Link href="/sign-in">Sign In</Link>
-                </Button>
-                <Button asChild size="sm">
-                  <Link href="/sign-up">Get Started</Link>
-                </Button>
-              </SignedOut>
-              <SignedIn>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
-                  <div className="flex items-center gap-1.5 border-r border-primary/20 pr-2 mr-1">
-                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
-                      {user?.subscription_tier === "pro" ? "Pro Plan" : user?.subscription_tier === "enterprise" ? "Enterprise" : "Free Tier"}
-                    </span>
-                  </div>
-                  <Coins className="w-4 h-4 text-primary" />
-                  {loading ? (
-                    <Skeleton className="h-4 w-12" />
-                  ) : (
-                    <span className="text-sm font-semibold text-primary">${Number(credits || 0).toFixed(2)}</span>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 hover:bg-primary/20"
-                    onClick={handleRefresh}
-                    disabled={refreshing}
-                  >
-                    <RefreshCw className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`} />
-                  </Button>
-                </div>
-                <Button asChild size="sm" variant="outline" className="hidden sm:flex">
-                  <Link href="/upload">Upload PDF</Link>
-                </Button>
-                <UserButton afterSignOutUrl="/" />
-              </SignedIn>
-            </>
+            <HeaderAuth />
           ) : (
             <Button asChild size="sm" disabled>
               <span>Setup Required</span>
@@ -108,5 +61,58 @@ export function Header() {
         </div>
       </div>
     </header>
+  )
+}
+
+function HeaderAuth() {
+  const { user, credits, loading, refreshCredits } = useCredits()
+  const [refreshing, setRefreshing] = useState(false)
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await refreshCredits()
+    setRefreshing(false)
+  }
+
+  return (
+    <>
+      <SignedOut>
+        <Button asChild variant="ghost" size="sm">
+          <Link href="/sign-in">Sign In</Link>
+        </Button>
+        <Button asChild size="sm">
+          <Link href="/sign-up">Get Started</Link>
+        </Button>
+      </SignedOut>
+      <SignedIn>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
+          <div className="flex items-center gap-1.5 border-r border-primary/20 pr-2 mr-1">
+            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+              {user?.subscription_tier === "pro" ? "Pro Plan" : user?.subscription_tier === "enterprise" ? "Enterprise" : "Free Tier"}
+            </span>
+          </div>
+          <Coins className="w-4 h-4 text-primary" />
+          {loading ? (
+            <Skeleton className="h-4 w-12" />
+          ) : (
+            <span className="text-sm font-semibold text-primary">${Number(credits || 0).toFixed(2)}</span>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 hover:bg-primary/20"
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            <RefreshCw className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
+        <Button asChild size="sm" variant="outline" className="hidden sm:flex">
+          <Link href="/upload">Upload PDF</Link>
+        </Button>
+        <UserButton afterSignOutUrl="/" />
+      </SignedIn>
+    </>
   )
 }
