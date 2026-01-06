@@ -1,10 +1,22 @@
 // API client with Clerk authentication
 
 const ENV = process.env.NEXT_PUBLIC_ENVIRONMENT || "sandbox"
-const API_BASE_URL =
+const rawUrl =
   ENV === "production"
-    ? process.env.NEXT_PUBLIC_PROD_API_URL || "https://api.pdf2audiobook.xyz"
-    : process.env.NEXT_PUBLIC_SANDBOX_API_URL || "https://api.pdf2audiobook.xyz"
+    ? process.env.NEXT_PUBLIC_PROD_API_URL
+    : process.env.NEXT_PUBLIC_SANDBOX_API_URL
+
+// Default to production URL in production builds, localhost in dev
+const defaultUrl = process.env.NODE_ENV === "production" ? "https://api.pdf2audiobook.xyz" : "http://localhost:8000"
+let finalUrl = rawUrl || defaultUrl
+
+// Safety check: specific override to prevent localhost usage in production builds
+// This is critical if Vercel env vars are accidentally set to localhost
+if (process.env.NODE_ENV === "production" && finalUrl.includes("localhost")) {
+  finalUrl = "https://api.pdf2audiobook.xyz"
+}
+
+const API_BASE_URL = finalUrl
 
 interface ApiError {
   detail?: string | Array<{ msg: string }>
