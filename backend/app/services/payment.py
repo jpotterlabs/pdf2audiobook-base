@@ -37,14 +37,16 @@ class PaymentService:
         price_id = checkout_request.product_id
         if price_id.startswith("pro_"):
             logger.info(f"Resolving Price ID for Product: {price_id}")
-            # Import filter inside to avoid unnecessary module loads
-            from paddle_billing.Resources.Prices.Operations import ListPrices
-            
-            # Use safe listing (no filters) and filter in Python, matching sync logic (see sync_products.py).
-            # TODO: Long-term, request proper Paddle API permissions to use `ListPrices(product_ids=[...])` directly.
-            # Current API key returns "You aren't permitted..." error when filtering by product_id.
-            all_prices = list(self.client.prices.list(ListPrices()))
-            prices = [p for p in all_prices if p.product_id == price_id]
+            # Align with sync_products.py logic which is known to work
+            try:
+                from paddle_billing.Resources.Prices.Operations import ListPrices
+                # "include=['product']" is key for the Price object to be shaped as expected by the SDK in this env
+                all_prices = list(self.client.prices.list(ListPrices(include=["product"])))
+                prices = [p for p in all_prices if p.product_id == price_id]
+            except Exception as e:
+                logger.error(f"Critical error listing prices in PaymentService: {e}")
+                logger.exception(e)
+                raise e
 
             if not prices:
                 raise PaddlePriceNotFoundError(f"No prices found for Paddle product {price_id}")
