@@ -45,55 +45,26 @@ class Settings(BaseSettings):
     CLERK_JWT_ISSUER: Optional[str] = None
     CLERK_JWT_AUDIENCE: Optional[str] = None
 
-    PROD_CLERK_PEM_PUBLIC_KEY: Optional[str] = None
-    PROD_CLERK_JWT_ISSUER: Optional[str] = None
-    PROD_CLERK_JWT_AUDIENCE: Optional[str] = None
-
-    SANDBOX_CLERK_PEM_PUBLIC_KEY: Optional[str] = None
-    SANDBOX_CLERK_JWT_ISSUER: Optional[str] = None
-    SANDBOX_CLERK_JWT_AUDIENCE: Optional[str] = None
-
     # Paddle
     PADDLE_VENDOR_ID: Optional[int] = None
     PADDLE_VENDOR_AUTH_CODE: Optional[str] = None
     PADDLE_API_KEY: Optional[str] = None
     PADDLE_PUBLIC_KEY: Optional[str] = None
     PADDLE_WEBHOOK_SECRET_KEY: Optional[str] = None
-    PADDLE_ENVIRONMENT: str = "sandbox"  # sandbox or production
-
-    PROD_PADDLE_VENDOR_ID: Optional[int] = None
-    PROD_PADDLE_API_KEY: Optional[str] = None
-    PROD_PADDLE_WEBHOOK_SECRET_KEY: Optional[str] = None
-
-    SANDBOX_PADDLE_VENDOR_ID: Optional[int] = None
-    SANDBOX_PADDLE_API_KEY: Optional[str] = None
-    SANDBOX_PADDLE_WEBHOOK_SECRET_KEY: Optional[str] = None
+    PADDLE_ENVIRONMENT: str = "production"
 
     # Frontend URLs for CORS
-    PROD_FRONTEND_URL: str = "https://pdf2audiobook.vercel.app"
-    SANDBOX_FRONTEND_URL: str = "http://localhost:3000"
+    FRONTEND_URL: str = "https://www.pdf2audiobook.xyz"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         
-        # --- Production-Only Configuration ---
-        logger.info("🚀 Loading PRODUCTION configuration")
-        
-        # Paddle
-        if self.PROD_PADDLE_API_KEY: self.PADDLE_API_KEY = self.PROD_PADDLE_API_KEY
-        if self.PROD_PADDLE_VENDOR_ID: self.PADDLE_VENDOR_ID = self.PROD_PADDLE_VENDOR_ID
-        if self.PROD_PADDLE_WEBHOOK_SECRET_KEY: self.PADDLE_WEBHOOK_SECRET_KEY = self.PROD_PADDLE_WEBHOOK_SECRET_KEY
-        self.PADDLE_ENVIRONMENT = "production"
-
-        # Clerk
-        if self.PROD_CLERK_PEM_PUBLIC_KEY: self.CLERK_PEM_PUBLIC_KEY = self.PROD_CLERK_PEM_PUBLIC_KEY
-        if self.PROD_CLERK_JWT_ISSUER: self.CLERK_JWT_ISSUER = self.PROD_CLERK_JWT_ISSUER
-        if self.PROD_CLERK_JWT_AUDIENCE: self.CLERK_JWT_AUDIENCE = self.PROD_CLERK_JWT_AUDIENCE
+        logger.info("🚀 Loading Configuration")
 
         # CORS
-        if self.PROD_FRONTEND_URL and self.PROD_FRONTEND_URL not in self.ALLOWED_HOSTS:
+        if self.FRONTEND_URL and self.FRONTEND_URL not in self.ALLOWED_HOSTS:
             if isinstance(self.ALLOWED_HOSTS, list):
-                self.ALLOWED_HOSTS.append(self.PROD_FRONTEND_URL)
+                self.ALLOWED_HOSTS.append(self.FRONTEND_URL)
 
         # Diagnostic logging for voice environment variables
         voice_vars = {k: v for k, v in os.environ.items() if k.startswith("GOOGLE_VOICE_")}
