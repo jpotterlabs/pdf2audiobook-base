@@ -26,9 +26,8 @@ def sync_products():
     logger.info(f"Syncing products from Paddle ({settings.PADDLE_ENVIRONMENT})...")
 
     try:
-        # Fetch all active products
-        # Note: We filter by active status in the list operation
-        paddle_products = list(client.products.list(ListProducts(status=["active"])))
+        # Fetch all products (filtering locally if needed, or using correct SDK params)
+        paddle_products = list(client.products.list(ListProducts()))
         
         if not paddle_products:
             logger.warning("No active products found in Paddle!")
