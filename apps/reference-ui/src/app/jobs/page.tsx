@@ -5,6 +5,8 @@ import { getJobs, deleteJob, cleanupFailedJobs } from '../../lib/api'
 import { Job } from '../../lib/types'
 import Link from 'next/link'
 import { useAuth } from '@clerk/nextjs'
+import { useCredits } from '../../contexts/CreditsContext'
+import { SubscriptionTier } from '../../lib/types'
 
 const hasClerkKey =
   typeof process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY === 'string' &&
@@ -15,6 +17,7 @@ export default function JobsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
   const { getToken } = useAuth()
+  const { user, credits } = useCredits()
 
   const fetchJobs = async () => {
     try {
@@ -121,6 +124,45 @@ export default function JobsPage() {
             {isDeleting ? 'Cleaning...' : 'Clean Up Failed Jobs'}
           </button>
         )}
+      </div>
+
+      {/* Account Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div className="bg-white p-6 rounded-lg shadow border border-gray-100 flex flex-col justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Current Plan</p>
+            <h3 className="text-2xl font-bold capitalize text-gray-900">{user?.subscription_tier || "Free"}</h3>
+          </div>
+          <p className="text-sm text-gray-500 mt-4 leading-relaxed">
+            {user?.subscription_tier === SubscriptionTier.PRO
+              ? "Priority processing and 3 conversions/month."
+              : user?.subscription_tier === SubscriptionTier.ENTERPRISE
+                ? "Enterprise access with 7 conversions/month."
+                : "Free tier with basic access."}
+          </p>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow border border-gray-100 flex flex-col justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Balance</p>
+            <div className="flex items-baseline gap-2">
+              <h3 className="text-2xl font-bold text-gray-900">{credits ?? 0} Credits</h3>
+            </div>
+          </div>
+          <Link href="/pricing" className="text-sm font-medium text-blue-600 hover:text-blue-700 mt-4 inline-flex items-center gap-1">
+            Top up balance →
+          </Link>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow border border-gray-100 flex flex-col justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">User ID</p>
+            <h3 className="text-sm font-mono text-gray-600 truncate">{user?.auth_provider_id || "..."}</h3>
+          </div>
+          <p className="text-xs text-gray-400 mt-4">
+            Member since: {user?.created_at ? new Date(user.created_at).toLocaleDateString() : "..."}
+          </p>
+        </div>
       </div>
 
       {isLoading ? (

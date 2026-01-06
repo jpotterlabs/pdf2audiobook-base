@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useAuth } from "@clerk/nextjs"
+import Link from "next/link"
 import { api } from "@/lib/api/client"
 import { useCredits } from "@/lib/contexts/credits-context"
 import type { Job } from "@/lib/api/types"
@@ -14,7 +15,7 @@ import { useClerkToken } from "@/lib/hooks/use-clerk-token"
 export function JobsDashboard() {
   const { getToken } = useAuth()
   useClerkToken()
-  const { refreshCredits } = useCredits()
+  const { user, credits, refreshCredits } = useCredits()
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -140,7 +141,47 @@ export function JobsDashboard() {
   }
 
   return (
-    <div className="container max-w-7xl mx-auto py-12 px-4">
+    <div className="container max-w-7xl mx-auto py-12 px-4 space-y-8">
+      {/* Account Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="glass p-6 rounded-xl border border-border/50 flex flex-col justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Current Plan</p>
+            <h3 className="text-2xl font-bold capitalize">{user?.subscription_tier || "Free"}</h3>
+          </div>
+          <p className="text-sm text-muted-foreground mt-4">
+            {user?.subscription_tier === "pro"
+              ? "3 conversions included per month"
+              : user?.subscription_tier === "enterprise"
+                ? "7 conversions included per month"
+                : "Basic pay-as-you-go access"}
+          </p>
+        </div>
+
+        <div className="glass p-6 rounded-xl border border-border/50 flex flex-col justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Available Credits</p>
+            <div className="flex items-baseline gap-2">
+              <h3 className="text-2xl font-bold">${Number(credits || 0).toFixed(2)}</h3>
+              <span className="text-xs text-muted-foreground italic">USD</span>
+            </div>
+          </div>
+          <Link href="/pricing" className="text-sm text-primary hover:underline mt-4 inline-flex items-center gap-1">
+            Add more credits <RefreshCw className="w-3 h-3" />
+          </Link>
+        </div>
+
+        <div className="glass p-6 rounded-xl border border-border/50 flex flex-col justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Account ID</p>
+            <h3 className="text-sm font-mono truncate">{user?.auth_provider_id || "..."}</h3>
+          </div>
+          <p className="text-xs text-muted-foreground mt-4">
+            Created: {user?.created_at ? new Date(user.created_at).toLocaleDateString() : "..."}
+          </p>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
@@ -175,7 +216,7 @@ export function JobsDashboard() {
               Upload your first PDF to get started. Your converted audiobooks will appear here.
             </p>
             <Button asChild>
-              <a href="/upload">Upload PDF</a>
+              <Link href="/upload">Upload PDF</Link>
             </Button>
           </div>
         </div>

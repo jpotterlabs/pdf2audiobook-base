@@ -3,9 +3,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { getCurrentUser } from '../lib/api'
+import { User } from '../lib/types'
 
 interface CreditsContextType {
     credits: number | null
+    user: User | null
     loading: boolean
     error: boolean
     refreshCredits: () => Promise<void>
@@ -16,6 +18,7 @@ const CreditsContext = createContext<CreditsContextType | undefined>(undefined)
 export function CreditsProvider({ children }: { children: React.ReactNode }) {
     const { getToken, userId, isLoaded } = useAuth()
     const [credits, setCredits] = useState<number | null>(null)
+    const [user, setUser] = useState<User | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(false)
 
@@ -46,8 +49,9 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
                 return
             }
 
-            const user = await getCurrentUser(token)
-            setCredits(user.credit_balance)
+            const userData = await getTokenRef.current().then(token => getCurrentUser(token!))
+            setUser(userData)
+            setCredits(userData.credit_balance)
             setError(false)
         } catch (err) {
             console.error('Failed to fetch user credits:', err)
@@ -67,7 +71,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     }, [isLoaded, userId, fetchCredits])
 
     return (
-        <CreditsContext.Provider value={{ credits, loading, error, refreshCredits: fetchCredits }}>
+        <CreditsContext.Provider value={{ credits, user, loading, error, refreshCredits: fetchCredits }}>
             {children}
         </CreditsContext.Provider>
     )
@@ -80,6 +84,7 @@ export function useCredits() {
         // This prevents the app from crashing in development or build environments
         return {
             credits: null,
+            user: null,
             loading: false,
             error: false,
             refreshCredits: async () => { }
