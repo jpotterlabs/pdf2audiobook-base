@@ -27,12 +27,12 @@ class TestStorageService:
         service = StorageService()
 
         # Assert
-        mock_boto3_client.assert_called_once_with(
-            's3',
-            aws_access_key_id="test_key",
-            aws_secret_access_key="test_secret",
-            region_name="us-east-1"
-        )
+        mock_boto3_client.assert_called_once()
+        args, kwargs = mock_boto3_client.call_args
+        assert args[0] == 's3'
+        assert kwargs["aws_access_key_id"] == "test_key"
+        assert kwargs["aws_secret_access_key"] == "test_secret"
+        assert kwargs["region_name"] == "us-east-1"
         assert service.bucket_name == "test-bucket"
 
     @patch("app.services.storage.settings")
@@ -42,6 +42,7 @@ class TestStorageService:
         # Arrange
         mock_settings.AWS_REGION = "us-east-1"
         mock_settings.S3_BUCKET_NAME = "test-bucket"
+        mock_settings.AWS_ENDPOINT_URL = None
 
         file_content = b"test file content"
         headers = Headers({"content-type": "application/pdf"})
@@ -100,6 +101,7 @@ class TestStorageService:
         # Arrange
         mock_settings.AWS_REGION = "us-east-1"
         mock_settings.S3_BUCKET_NAME = "test-bucket"
+        mock_settings.AWS_ENDPOINT_URL = None
 
         file_data = b"test file data"
         key = "uploads/test.pdf"

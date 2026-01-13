@@ -2,7 +2,6 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useAuth, SignedIn, SignedOut } from '@clerk/nextjs'
 import { getJob, getJobStatus } from '../../../lib/api'
 import { Job, JobStatus } from '../../../lib/types'
 import {
@@ -19,7 +18,6 @@ const POLL_INTERVAL_MS = 5000
 function JobDetailContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { getToken } = useAuth()
 
   const [job, setJob] = useState<Job | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -30,29 +28,18 @@ function JobDetailContent() {
 
   useEffect(() => {
     if (!jobId || Number.isNaN(jobId)) {
-      // Small delay to allow hydration before error if needed, or just handle immediate
-      if (!isLoading) return // avoid loop if already set
+      if (!isLoading) return
       setError('Invalid job ID.')
       setIsLoading(false)
       return
     }
-    // ... rest of logic ...
-
 
     let intervalId: NodeJS.Timeout | null = null
     let cancelled = false
 
     const loadJob = async () => {
       try {
-        const token = await getToken()
-
-        if (!token) {
-          setError('You must be signed in to view this job.')
-          setIsLoading(false)
-          return
-        }
-
-        const initialJob = await getJob(jobId, token)
+        const initialJob = await getJob(jobId)
         if (cancelled) return
 
         setJob(initialJob)
@@ -66,7 +53,7 @@ function JobDetailContent() {
         if (shouldPoll) {
           intervalId = setInterval(async () => {
             try {
-              const status = await getJobStatus(jobId, token)
+              const status = await getJobStatus(jobId)
               if (cancelled) return
 
               setJob((prev) =>
@@ -94,14 +81,13 @@ function JobDetailContent() {
                 }
               }
             } catch (pollError) {
-              // Keep polling on transient errors, but log for debugging.
               console.error('Failed to poll job status', pollError)
             }
           }, POLL_INTERVAL_MS)
         }
       } catch (loadError) {
         console.error('Failed to fetch job', loadError)
-        setError('Failed to load job. Please refresh and try again.')
+        setError('Failed to load job. Use "My Jobs" to check if it exists.')
         setIsLoading(false)
       }
     }
@@ -112,7 +98,7 @@ function JobDetailContent() {
       cancelled = true
       if (intervalId) clearInterval(intervalId)
     }
-  }, [jobId, getToken])
+  }, [jobId])
 
   const handleDownload = () => {
     if (job?.audio_s3_url) {
@@ -158,250 +144,150 @@ function JobDetailContent() {
         Back to jobs
       </button>
 
-      <SignedOut>
-        <div className="bg-white border border-slate-200 rounded-xl p-6 flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5" />
-          <div>
-            <h2 className="text-sm font-semibold text-slate-900">
-              Sign in required
-            </h2>
-            <p className="mt-1 text-xs sm:text-sm text-slate-600">
-              You need to be signed in to view job details. Use the header
-              controls to sign in, then return to this page.
-            </p>
-          </div>
+      {isLoading && (
+        <div className="bg-white/80 backdrop-blur border border-slate-100 rounded-2xl px-6 py-10 flex flex-col items-center justify-center shadow-sm">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
+          <p className="text-sm sm:text-base text-slate-600">
+            Fetching job details…
+          </p>
         </div>
-        <div className="mt-6" />
-      </SignedOut>
+      )}
 
-      <SignedIn>
-        {isLoading && (
-          <div className="bg-white/80 backdrop-blur border border-slate-100 rounded-2xl px-6 py-10 flex flex-col items-center justify-center shadow-sm">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
-            <p className="text-sm sm:text-base text-slate-600">
-              Fetching job details…
-            </p>
-          </div>
-        )}
+      {!isLoading && error && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-xl text-xs sm:text-sm flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 mt-0.5" />
+          <div>{error}</div>
+        </div>
+      )}
 
-        {!isLoading && error && (
-          <div className="bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-xl text-xs sm:text-sm flex items-start gap-2">
-            <AlertCircle className="h-4 w-4 mt-0.5" />
-            <div>{error}</div>
-          </div>
-        )}
-
-        {!isLoading && !error && job && (
-          <div className="space-y-6">
-            {/* Title + meta */}
-            <div className="bg-white/80 backdrop-blur border border-slate-100 rounded-2xl p-6 shadow-sm space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="mt-1">
-                    <FileText className="h-8 w-8 text-blue-500" />
-                  </div>
-                  <div>
-                    <h1 className="text-lg sm:text-xl font-semibold text-slate-900 break-words">
-                      {job.original_filename}
-                    </h1>
-                    <p className="mt-1 text-xs sm:text-sm text-slate-500">
-                      Created{' '}
-                      {new Date(job.created_at).toLocaleString(undefined, {
-                        dateStyle: 'medium',
-                        timeStyle: 'short',
-                      })}
-                    </p>
-                  </div>
+      {!isLoading && !error && job && (
+        <div className="space-y-6">
+          {/* Title + meta */}
+          <div className="bg-white/80 backdrop-blur border border-slate-100 rounded-2xl p-6 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="mt-1">
+                  <FileText className="h-8 w-8 text-blue-500" />
                 </div>
-                <div className="flex flex-col items-start sm:items-end gap-2">
-                  {renderStatusBadge(job.status)}
-                  <p className="text-[10px] sm:text-xs text-slate-500">
-                    Voice: {job.voice_provider} · {job.voice_type} ·
-                    &nbsp;Speed: {job.reading_speed}x
-                  </p>
-                  <p className="text-[10px] sm:text-xs text-slate-500">
-                    Mode:{' '}
-                    {job.conversion_mode === 'summary_explanation'
-                      ? 'AI summary & explanation'
-                      : job.conversion_mode === 'summary'
-                        ? 'AI summary'
-                        : job.conversion_mode === 'explanation'
-                          ? 'AI concept explanation'
-                          : 'Full text narration'}
+                <div>
+                  <h1 className="text-lg sm:text-xl font-semibold text-slate-900 break-words">
+                    {job.original_filename}
+                  </h1>
+                  <p className="mt-1 text-xs sm:text-sm text-slate-500">
+                    Created{' '}
+                    {new Date(job.created_at).toLocaleString()}
                   </p>
                 </div>
               </div>
-
-              {/* Progress / status */}
-              {(job.status === JobStatus.PENDING ||
-                job.status === JobStatus.PROCESSING) && (
-                  <div className="mt-2 space-y-2">
-                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                      <div
-                        className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500"
-                        style={{
-                          width: `${Math.min(
-                            Math.max(job.progress_percentage || 10, 10),
-                            95
-                          )}%`,
-                        }}
-                      />
-                    </div>
-                    <p className="text-[10px] sm:text-xs text-slate-500">
-                      Your PDF is being processed using our OCR and TTS pipeline.
-                      For long or scanned papers, this can take a few minutes.
-                    </p>
-                  </div>
-                )}
-
-              {job.status === JobStatus.FAILED && job.error_message && (
-                <div className="mt-2 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 text-[10px] sm:text-xs text-rose-800 flex gap-2">
-                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                  <div>
-                    <div className="font-medium mb-0.5">Conversion failed</div>
-                    <div>{job.error_message}</div>
-                  </div>
-                </div>
-              )}
+              <div className="flex flex-col items-start sm:items-end gap-2 text-right">
+                {renderStatusBadge(job.status)}
+                <p className="text-[10px] sm:text-xs text-slate-500">
+                  {job.voice_provider} · {job.voice_type} · {job.reading_speed}x
+                </p>
+              </div>
             </div>
 
-            {/* Output / audio section */}
-            <div className="bg-white/80 backdrop-blur border border-slate-100 rounded-2xl p-6 shadow-sm space-y-4">
-              <h2 className="text-sm sm:text-base font-semibold text-slate-900">
-                Output
-              </h2>
-
-              {job.status === JobStatus.COMPLETED && job.audio_s3_url && (
-                <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <PlayCircle className="h-6 w-6 text-blue-500" />
-                      <div className="text-xs sm:text-sm text-slate-700">
-                        Stream the generated audio directly, or download it for
-                        offline listening.
-                      </div>
-                    </div>
-                    <button
-                      onClick={handleDownload}
-                      className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-blue-600 text-white text-[10px] sm:text-xs font-medium hover:bg-blue-700 transition-colors"
-                    >
-                      <Download className="h-3 w-3 mr-1.5" />
-                      Download audio
-                    </button>
+            {/* Progress / status */}
+            {(job.status === JobStatus.PENDING ||
+              job.status === JobStatus.PROCESSING) && (
+                <div className="mt-2 space-y-2">
+                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500"
+                      style={{
+                        width: `${Math.min(
+                          Math.max(job.progress_percentage || 10, 10),
+                          95
+                        )}%`,
+                      }}
+                    />
                   </div>
-                  <audio
-                    controls
-                    src={job.audio_s3_url}
-                    className="w-full rounded-lg border border-slate-200"
-                  >
-                    Your browser does not support the audio element.
-                  </audio>
+                  <p className="text-[10px] sm:text-xs text-slate-500">
+                    Your PDF is being processed. This can take a few minutes for larger files.
+                  </p>
                 </div>
               )}
 
-              {job.status === JobStatus.COMPLETED && !job.audio_s3_url && (
-                <div className="flex items-start gap-2 text-[10px] sm:text-xs text-slate-600">
-                  <AlertCircle className="h-4 w-4 mt-0.5 text-amber-500" />
-                  <div>
-                    This job is marked as completed, but no audio URL is
-                    available. If this is unexpected, verify the backend
-                    configuration or S3 permissions.
-                  </div>
-                </div>
-              )}
-
-              {(job.status === JobStatus.PENDING ||
-                job.status === JobStatus.PROCESSING) && (
-                  <div className="flex items-start gap-2 text-[10px] sm:text-xs text-slate-600">
-                    <Loader2 className="h-4 w-4 mt-0.5 animate-spin text-blue-500" />
-                    <div>
-                      We are extracting text, generating the narration or summary,
-                      and preparing your audio. You can safely leave this page and
-                      return later from the “My Jobs” view.
-                    </div>
-                  </div>
-                )}
-
-              {job.status === JobStatus.FAILED && (
-                <div className="flex items-start gap-2 text-[10px] sm:text-xs text-slate-600">
-                  <AlertCircle className="h-4 w-4 mt-0.5 text-rose-500" />
-                  <div>
-                    If this is a scanned or very large PDF, try again with a
-                    clearer copy or contact support with this job ID:{' '}
-                    <span className="font-mono text-rose-700">{job.id}</span>.
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Contextual hints for academic/novel use cases */}
-            <div className="text-[9px] sm:text-[10px] text-slate-500 leading-relaxed">
-              <p>
-                Tip for researchers: use the summary mode for dense scientific
-                PDFs to get an AI-generated overview you can listen to while
-                commuting. For deep reading of novels or long-form reports, use
-                full-text narration for a faithful audiobook experience.
-              </p>
-            </div>
-
-            {/* Debug Information (Development Only) */}
-            {process.env.NEXT_PUBLIC_ENVIRONMENT === 'development' && (
-              <div className="mt-10 pt-6 border-t border-slate-200">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                    Debug Metrics & Metadata
-                  </h3>
-                </div>
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 overflow-hidden">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[10px] sm:text-xs">
-                    <div className="space-y-3">
-                      <div>
-                        <span className="text-slate-500 block mb-0.5">Job ID</span>
-                        <code className="text-slate-900 bg-slate-200/50 px-1.5 py-0.5 rounded">{job.id}</code>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block mb-0.5">Estimated Cost</span>
-                        <span className="font-mono text-emerald-700 font-semibold">
-                          ${job.estimated_cost?.toFixed(3) || '0.000'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block mb-0.5">Processing Duration</span>
-                        <span className="text-slate-700">
-                          {job.started_at && job.completed_at
-                            ? `${((new Date(job.completed_at).getTime() - new Date(job.started_at).getTime()) / 1000).toFixed(1)}s`
-                            : job.started_at
-                              ? 'In progress...'
-                              : 'Waiting...'}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <span className="text-slate-500 block mb-0.5">PDF S3 Key</span>
-                        <code className="text-[9px] text-slate-600 break-all">{job.pdf_s3_key}</code>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block mb-0.5">Audio S3 Key</span>
-                        <code className="text-[9px] text-slate-600 break-all">{job.audio_s3_key || 'Not generated'}</code>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block mb-0.5">Timestamps</span>
-                        <div className="space-y-1 text-[9px] text-slate-600">
-                          <div>Created: {new Date(job.created_at).toISOString()}</div>
-                          {job.started_at && <div>Started: {new Date(job.started_at).toISOString()}</div>}
-                          {job.completed_at && <div>Finished: {new Date(job.completed_at).toISOString()}</div>}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+            {job.status === JobStatus.FAILED && job.error_message && (
+              <div className="mt-2 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 text-[10px] sm:text-xs text-rose-800 flex gap-2">
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                <div>
+                  <div className="font-medium mb-0.5">Conversion failed</div>
+                  <div>{job.error_message}</div>
                 </div>
               </div>
             )}
           </div>
-        )}
-      </SignedIn>
+
+          {/* Output / audio section */}
+          <div className="bg-white/80 backdrop-blur border border-slate-100 rounded-2xl p-6 shadow-sm space-y-4">
+            <h2 className="text-sm sm:text-base font-semibold text-slate-900">
+              Output
+            </h2>
+
+            {job.status === JobStatus.COMPLETED && job.audio_s3_url && (
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <PlayCircle className="h-6 w-6 text-blue-500" />
+                    <div className="text-xs sm:text-sm text-slate-700">
+                      Download the generated audio for offline listening.
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleDownload}
+                    className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download audio
+                  </button>
+                </div>
+                <audio
+                  controls
+                  src={job.audio_s3_url}
+                  className="w-full rounded-lg border border-slate-200"
+                >
+                  Your browser does not support the audio element.
+                </audio>
+              </div>
+            )}
+
+            {job.status === JobStatus.COMPLETED && !job.audio_s3_url && (
+              <div className="flex items-start gap-2 text-[10px] sm:text-xs text-slate-600">
+                <AlertCircle className="h-4 w-4 mt-0.5 text-amber-500" />
+                <div>
+                  Job completed, but audio URL is missing. Check backend logs.
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Debug Info */}
+          <div className="mt-10 pt-6 border-t border-slate-200">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">
+              Job Metadata
+            </h3>
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+              <div>
+                <span className="text-slate-500 block">Job ID</span>
+                <span className="text-slate-900">{job.id}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block">Tokens Used</span>
+                <span className="text-slate-900">{job.tokens_used || 0}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block">Est. Cost</span>
+                <span className="text-emerald-700 font-bold">${job.estimated_cost?.toFixed(4) || '0.0000'}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block">Created</span>
+                <span className="text-slate-700">{new Date(job.created_at).toISOString()}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

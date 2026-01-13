@@ -47,8 +47,8 @@ async def update_current_user(
 
 @router.post(
     "/verify",
-    summary="Verify Token and Get User",
-    description="Verifies a JWT token from the auth provider (Clerk), then finds or creates a user in the local database. This endpoint is typically called after a successful login on the frontend.",
+    summary="Verify User and Setup Session",
+    description="Identifies or creates a user in the local database. For the base pipeline, this is a simplified mock authentication.",
 )
 async def verify_token(
     token: str = Body(..., embed=True), db: Session = Depends(get_db)

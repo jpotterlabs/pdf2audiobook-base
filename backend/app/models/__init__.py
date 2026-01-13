@@ -27,12 +27,6 @@ def create_enum_type(name, values, metadata):
     return Enum(*processed_values, name=name.lower(), create_type=True)
 
 
-class SubscriptionTier(str, enum.Enum):
-    free = "free"
-    pro = "pro"
-    enterprise = "enterprise"
-
-
 class JobStatus(str, enum.Enum):
     pending = "pending"
     processing = "processing"
@@ -49,36 +43,21 @@ class VoiceProvider(str, enum.Enum):
     eleven_labs = "eleven_labs"
 
 
-class ProductType(str, enum.Enum):
-    subscription = "subscription"
-    one_time = "one_time"
-
-
 class ConversionMode(str, enum.Enum):
     full = "full"
     summary = "summary"
     explanation = "explanation"
     summary_explanation = "summary_explanation"
+    full_explanation = "full_explanation"
 
 
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    auth_provider_id = Column(String(255), unique=True, index=True, nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
     first_name = Column(String(100))
     last_name = Column(String(100))
-
-    # Subscription info
-    subscription_tier = Column(
-        create_enum_type("subscriptiontier", SubscriptionTier, Base.metadata),
-        default=SubscriptionTier.free,
-    )
-    paddle_customer_id = Column(String(255))
-    one_time_credits = Column(Integer, default=0)  # Deprecated in favor of credit_balance, but kept for migration
-    credit_balance = Column(Numeric(10, 2), default=0.00)
-    monthly_credits_used = Column(Integer, default=0)
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -86,7 +65,6 @@ class User(Base):
 
     # Relationships
     jobs = relationship("Job", back_populates="user")
-    subscriptions = relationship("Subscription", back_populates="user")
 
 
 class Job(Base):
@@ -133,97 +111,3 @@ class Job(Base):
 
     # Relationships
     user = relationship("User", back_populates="jobs")
-
-
-class Product(Base):
-    __tablename__ = "products"
-
-    id = Column(Integer, primary_key=True, index=True)
-    paddle_product_id = Column(String(255), unique=True, nullable=False)
-    name = Column(String(255), nullable=False)
-    description = Column(Text)
-
-    # Pricing
-    price = Column(Numeric(10, 2))
-    currency = Column(String(3), default="USD")
-
-    # Credits/Tier info
-    credits_included = Column(Integer)
-    subscription_tier = Column(
-        create_enum_type("subscriptiontier", SubscriptionTier, Base.metadata)
-    )
-
-    # Status
-    is_active = Column(Boolean, default=True)
-    # Processing type with safe ENUM handling
-    type = Column(
-        create_enum_type("producttype", ProductType, Base.metadata), nullable=False
-    )
-
-    # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-
-    # Relationships
-    subscriptions = relationship("Subscription", back_populates="product")
-
-
-class Subscription(Base):
-    __tablename__ = "subscriptions"
-
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-
-    # Paddle info
-    paddle_subscription_id = Column(String(255), unique=True)
-    status = Column(String(50), default="active")
-
-    # Billing
-    next_billing_date = Column(DateTime(timezone=True))
-    cancelled_at = Column(DateTime(timezone=True))
-
-    # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-
-    # Relationships
-    user = relationship("User", back_populates="subscriptions")
-    product = relationship("Product", back_populates="subscriptions")
-
-
-class Transaction(Base):
-    __tablename__ = "transactions"
-
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id"))
-
-    # Paddle info
-    paddle_transaction_id = Column(String(255), unique=True, nullable=False)
-    amount = Column(Numeric(10, 2), nullable=False)
-    currency = Column(String(3), default="USD")
-    status = Column(String(50), default="completed")
-
-    # Credits applied
-    credits_added = Column(Integer)
-
-    # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-    # Relationships
-    user = relationship("User")
-    product = relationship("Product")
-
-
-class WebhookEvent(Base):
-    __tablename__ = "webhook_events"
-
-    id = Column(Integer, primary_key=True, index=True)
-    paddle_event_id = Column(String(255), index=True)
-    event_type = Column(String(255), nullable=False)
-    payload = Column(Text, nullable=False)  # JSON string
-    status = Column(String(50), default="received")  # received, processed, failed
-    error_message = Column(Text)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-

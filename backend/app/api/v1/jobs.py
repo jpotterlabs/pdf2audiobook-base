@@ -89,13 +89,8 @@ async def create_job(
 
     The endpoint first validates the user's credits, uploads the file to S3, creates a job record in the database, and finally queues a background task to perform the conversion.
     """
+    # Job creation for base pipeline (no credit checks)
     job_service = JobService(db)
-    if not job_service.can_user_create_job(current_user.id):
-        raise HTTPException(
-            status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail="Insufficient credits or subscription limit reached",
-        )
-
     storage_service = StorageService()
     pdf_s3_key = f"pdfs/{current_user.id}/{file.filename}"
     pdf_s3_url = await storage_service.upload_file(file, pdf_s3_key)
@@ -139,13 +134,7 @@ async def get_user_jobs(
     
     # Generate presigned URLs for completed jobs
     storage_service = StorageService()
-    is_admin = settings.ADMIN_EMAIL and current_user.email == settings.ADMIN_EMAIL
-
     for job in jobs:
-        # Security: Hide cost for non-admins
-        if not is_admin:
-            job.estimated_cost = 0 # Or None if schema allows, but schema says number. Hiding by setting to 0 implies "no cost" or "hidden". 
-            # Better: The UI checks for > 0. So 0 works to hide it. 
         
         if job.status == JobStatus.completed and job.audio_s3_key:
             job.audio_s3_url = storage_service.generate_presigned_url(job.audio_s3_key)

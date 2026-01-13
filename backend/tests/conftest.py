@@ -47,7 +47,7 @@ def client(db_session):
     def override_get_current_user():
         user = db_session.query(User).first()
         if not user:
-            user = User(id=1, auth_provider_id="dev_user_123", email="dev@example.com")
+            user = User(id=1, email="dev@example.com")
             db_session.add(user)
             db_session.commit()
         return user

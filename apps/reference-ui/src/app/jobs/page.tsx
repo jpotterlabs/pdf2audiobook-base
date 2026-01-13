@@ -4,35 +4,15 @@ import { useEffect, useState } from 'react'
 import { getJobs, deleteJob, cleanupFailedJobs } from '../../lib/api'
 import { Job } from '../../lib/types'
 import Link from 'next/link'
-import { useAuth } from '@clerk/nextjs'
-import { useCredits } from '../../contexts/CreditsContext'
-import { SubscriptionTier } from '../../lib/types'
-
-const hasClerkKey =
-  typeof process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY === 'string' &&
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.startsWith('pk_')
 
 export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
-  const { getToken } = useAuth()
-  const { user, credits } = useCredits()
 
   const fetchJobs = async () => {
     try {
-      if (!hasClerkKey) {
-        setIsLoading(false)
-        return
-      }
-
-      const token = await getToken()
-      if (!token) {
-        setIsLoading(false)
-        return
-      }
-
-      const fetchedJobs = await getJobs(token)
+      const fetchedJobs = await getJobs()
       setJobs(fetchedJobs)
     } catch (error) {
       console.error('Failed to fetch jobs:', error)
@@ -43,7 +23,7 @@ export default function JobsPage() {
 
   useEffect(() => {
     fetchJobs()
-  }, [getToken])
+  }, [])
 
   const handleDeleteJob = async (jobId: number) => {
     if (!confirm('Are you sure you want to delete this job? This action cannot be undone.')) {
@@ -52,11 +32,8 @@ export default function JobsPage() {
 
     setIsDeleting(true)
     try {
-      const token = await getToken()
-      if (token) {
-        await deleteJob(jobId, token)
-        await fetchJobs() // Refresh list
-      }
+      await deleteJob(jobId)
+      await fetchJobs() // Refresh list
     } catch (error) {
       console.error('Failed to delete job:', error)
       alert('Failed to delete job. Please try again.')
@@ -72,33 +49,15 @@ export default function JobsPage() {
 
     setIsDeleting(true)
     try {
-      const token = await getToken()
-      if (token) {
-        const result = await cleanupFailedJobs(token)
-        alert(result.message)
-        await fetchJobs() // Refresh list
-      }
+      const result = await cleanupFailedJobs()
+      alert(result.message)
+      await fetchJobs() // Refresh list
     } catch (error) {
       console.error('Failed to cleanup jobs:', error)
       alert('Failed to cleanup jobs.')
     } finally {
       setIsDeleting(false)
     }
-  }
-
-  if (!hasClerkKey) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-          My Jobs
-        </h1>
-        <p className="text-sm text-gray-600">
-          Clerk is not configured in this environment, so job history cannot be
-          loaded. In production, this page will show your PDF-to-audiobook
-          conversions.
-        </p>
-      </div>
-    )
   }
 
   const hasFailedJobs = jobs.some(j => j.status === 'failed' || j.status === 'cancelled')
@@ -126,62 +85,38 @@ export default function JobsPage() {
         )}
       </div>
 
-      {/* Account Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        <div className="bg-white p-6 rounded-lg shadow border border-gray-100 flex flex-col justify-between">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Current Plan</p>
-            <h3 className="text-2xl font-bold capitalize text-gray-900">{user?.subscription_tier || "Free"}</h3>
-          </div>
-          <p className="text-sm text-gray-500 mt-4 leading-relaxed">
-            {user?.subscription_tier === SubscriptionTier.PRO
-              ? "Priority processing and 3 conversions/month."
-              : user?.subscription_tier === SubscriptionTier.ENTERPRISE
-                ? "Enterprise access with 7 conversions/month."
-                : "Free tier with basic access."}
-          </p>
+      {/* Simplified Info Banner */}
+      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-8 flex items-center justify-between">
+        <div>
+          <p className="text-blue-800 font-medium">Base Mode Enabled</p>
+          <p className="text-blue-600 text-sm">Job history is stored locally for the Base User.</p>
         </div>
-
-        <div className="bg-white p-6 rounded-lg shadow border border-gray-100 flex flex-col justify-between">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Balance</p>
-            <div className="flex items-baseline gap-2">
-              <h3 className="text-2xl font-bold text-gray-900">{credits ?? 0} Credits</h3>
-            </div>
-          </div>
-          <Link href="/pricing" className="text-sm font-medium text-blue-600 hover:text-blue-700 mt-4 inline-flex items-center gap-1">
-            Top up balance →
-          </Link>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow border border-gray-100 flex flex-col justify-between">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">User ID</p>
-            <h3 className="text-sm font-mono text-gray-600 truncate">{user?.auth_provider_id || "..."}</h3>
-          </div>
-          <p className="text-xs text-gray-400 mt-4">
-            Member since: {user?.created_at ? new Date(user.created_at).toLocaleDateString() : "..."}
-          </p>
-        </div>
+        <Link
+          href="/upload"
+          className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+        >
+          New Conversion
+        </Link>
       </div>
 
       {isLoading ? (
-        <div className="text-center">
+        <div className="text-center py-20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4">Loading jobs...</p>
+          <p className="mt-4 text-gray-500">Loading your jobs...</p>
         </div>
       ) : jobs.length === 0 ? (
-        <div className="text-center">
-          <p className="text-lg">You haven't created any jobs yet.</p>
+        <div className="text-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+          <p className="text-lg text-gray-600 font-medium">You haven't created any jobs yet.</p>
+          <p className="text-gray-500 mb-6">Upload your first PDF to get started.</p>
           <Link
             href="/upload"
-            className="text-blue-600 hover:underline mt-4 inline-block"
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors inline-block"
           >
             Create your first job
           </Link>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -205,7 +140,7 @@ export default function JobsPage() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {jobs.map((job) => (
-                  <tr key={job.id}>
+                  <tr key={job.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {job.original_filename}
                     </td>
@@ -222,27 +157,37 @@ export default function JobsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {job.progress_percentage}%
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                          <div
+                            className="bg-blue-600 h-full transition-all duration-500"
+                            style={{ width: `${job.progress_percentage}%` }}
+                          />
+                        </div>
+                        <span>{job.progress_percentage}%</span>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(job.created_at).toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                      <Link
-                        href={`/jobs/view?id=${job.id}`}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        View
-                      </Link>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
+                      {job.status === 'completed' && job.audio_s3_url && (
+                        <a
+                          href={job.audio_s3_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-green-600 hover:text-green-900"
+                        >
+                          Download
+                        </a>
+                      )}
                       <button
                         onClick={() => handleDeleteJob(job.id)}
                         disabled={isDeleting}
                         className="text-red-600 hover:text-red-900 disabled:opacity-50"
                         title="Delete Job"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
+                        Delete
                       </button>
                     </td>
                   </tr>

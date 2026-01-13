@@ -1,145 +1,43 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from jose import jwt, JWTError
-from datetime import datetime
 from typing import Optional, Dict, Any
 from loguru import logger
 
 from app.core.database import get_db
-from app.core.config import settings
-from app.schemas import User, SubscriptionTier
+from app.models import User
 from app.services.user import UserService
 
 security = HTTPBearer()
 
 def verify_clerk_token(token: str) -> dict:
     """
-    Verifies a Clerk-issued JWT token.
-    Returns a dictionary containing user data from the token.
+    Mocked verification for base pipeline.
     """
-    # Local testing mode fallback
-    if settings.TESTING_MODE and token == "dev-secret-key-for-testing-only":
-        return {
-            "auth_provider_id": "dev_user_123",
-            "email": "dev@example.com",
-            "first_name": "Dev",
-            "last_name": "User"
-        }
-
-    if not all([settings.CLERK_PEM_PUBLIC_KEY, settings.CLERK_JWT_ISSUER, settings.CLERK_JWT_AUDIENCE]):
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Clerk authentication not fully configured. Please set CLERK_PEM_PUBLIC_KEY, CLERK_JWT_ISSUER, and CLERK_JWT_AUDIENCE environment variables."
-        )
-
-    try:
-        # Clerk uses RS256 algorithm and requires verification with its public key.
-        # The issuer (iss) and audience (azp) claims are also validated.
-        header = jwt.get_unverified_header(token)
-        payload_unverified = jwt.get_unverified_claims(token)
-        logger.debug(f"Token Header (KID): {header.get('kid')}")
-        logger.debug(f"Token Payload (ISS): {payload_unverified.get('iss')}")
-        logger.debug(f"Token Payload (AUD): {payload_unverified.get('aud')}")
-        logger.debug(f"Token Payload (AZP): {payload_unverified.get('azp')}")
-        logger.debug(f"Backend Settings - ISSUER: {settings.CLERK_JWT_ISSUER}, AUDIENCE: {settings.CLERK_JWT_AUDIENCE}")
-        
-        # If the token has no audience, or we want to allow azp matching, we might need to adjust options.
-        # But for now, let's see if the signature itself is the real problem.
-        # We'll try to decode without audience check first to see if signature passes.
-        
-        decode_options = {
-            "verify_signature": True, 
-            "verify_iss": True,
-            "verify_aud": True if payload_unverified.get("aud") else False
-        }
-        
-        payload = jwt.decode(
-            token,
-            key=settings.CLERK_PEM_PUBLIC_KEY,
-            algorithms=["RS256"],
-            audience=settings.CLERK_JWT_AUDIENCE,
-            issuer=settings.CLERK_JWT_ISSUER,
-            options=decode_options
-        )
-        
-        # Extract user information
-        # 'sub' is the user ID in Clerk's JWT
-        # 'email_addresses' is an array, take the first one if available
-        # Parse email - fallback to a generated one if missing (to satisfy DB NotNull constraint)
-        email = None
-        if payload.get("email"):
-             email = payload.get("email")
-        elif payload.get("email_addresses") and len(payload["email_addresses"]) > 0:
-             email = payload["email_addresses"][0].get("email_address")
-        
-        if not email:
-            # Fallback for users signed up via methods that might not share email immediately
-            # or if using a strictly phone-based auth in the future.
-            email = f"{payload.get('sub')}@clerk.user"
-
-        user_data = {
-            "auth_provider_id": payload.get("sub"),
-            "email": email,
-            "first_name": payload.get("given_name"),
-            "last_name": payload.get("family_name")
-        }
-        
-        return user_data
-    except JWTError as e:
-        logger.warning(f"JWT Verification Error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Could not validate credentials: {str(e)}",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    except Exception as e:
-        logger.error(f"Unexpected Auth Error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Unexpected authentication error",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    return {
+        "email": "base@example.com",
+        "first_name": "Base",
+        "last_name": "User"
+    }
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db)
 ) -> User:
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-
-    try:
-        user_data = verify_clerk_token(credentials.credentials)
-        user_service = UserService(db)
-        user = user_service.get_user_by_auth_id(user_data["auth_provider_id"])
-
-        if user is None:
-            # Auto-create user if they don't exist but have a valid token
-            # This handles cases where the frontend hasn't explicitly called /verify
-            logger.info(f"User not found in DB for auth_id: {user_data['auth_provider_id']}. Auto-creating...")
-            user = user_service.get_or_create_user(user_data)
-
-        return user
-    except HTTPException:
-        # Re-raise any HTTPExceptions from verify_clerk_token or our own logic
-        raise
-    except Exception as e:
-        logger.error(f"Auth catch-all error: {str(e)}")
-        raise credentials_exception
+    """
+    Returns a default user for the base pipeline.
+    """
+    user_service = UserService(db)
+    user_data = {
+        "email": "base@example.com",
+        "first_name": "Base",
+        "last_name": "User"
+    }
+    user = user_service.get_or_create_user(user_data)
+    return user
 
 def get_optional_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db)
 ) -> Optional[User]:
-    if not credentials:
-        return None
-        
-    try:
-        user_data = verify_clerk_token(credentials.credentials)
-        user_service = UserService(db)
-        return user_service.get_user_by_auth_id(user_data["auth_provider_id"])
-    except JWTError:
-        return None
+    return get_current_user(credentials, db)

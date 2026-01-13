@@ -1,46 +1,23 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Upload, FileText, X, CheckCircle, AlertCircle } from 'lucide-react'
-import { createJob, getCurrentUser } from '../../lib/api'
+import { createJob } from '../../lib/api'
 import { Job } from '../../lib/types'
 import toast, { Toaster } from 'react-hot-toast'
-import { useAuth } from '@clerk/nextjs'
 
 export default function UploadPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [jobResponse, setJobResponse] = useState<Job | null>(null)
-  const [voiceProvider, setVoiceProvider] = useState('google')
-  const [voiceType, setVoiceType] = useState('us_female_std')
+  const [voiceProvider, setVoiceProvider] = useState('openai')
+  const [voiceType, setVoiceType] = useState('alloy')
   const [readingSpeed, setReadingSpeed] = useState(1.0)
-  const [includeSummary, setIncludeSummary] = useState(true)
-  const [conversionMode, setConversionMode] = useState('full')
-  const [userCredits, setUserCredits] = useState<number | null>(null)
-  const [creditsLoading, setCreditsLoading] = useState(true)
-  const { getToken } = useAuth()
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      setCreditsLoading(true)
-      try {
-        const token = await getToken()
-        if (token) {
-          const user = await getCurrentUser(token)
-          setUserCredits(user.credit_balance)
-        }
-      } catch (e) {
-        console.error(e)
-        toast.error('Unable to load credit information. Upload may be restricted.')
-      } finally {
-        setCreditsLoading(false)
-      }
-    }
-    fetchUser()
-  }, [getToken])
-
+  const [includeNarration, setIncludeNarration] = useState(true)
+  const [includeSummary, setIncludeSummary] = useState(false)
+  const [includeExplanation, setIncludeExplanation] = useState(false)
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {
@@ -49,8 +26,6 @@ export default function UploadPage() {
     maxFiles: 1,
     maxSize: 50 * 1024 * 1024, // 50MB
     onDrop: (acceptedFiles) => {
-      // Check credits immediately on drop? Or wait for upload click?
-      // Let's warn on upload click but maybe show a banner if 0.
       if (acceptedFiles.length > 0) {
         setSelectedFile(acceptedFiles[0])
         setJobResponse(null)
@@ -61,9 +36,8 @@ export default function UploadPage() {
   const handleUpload = async () => {
     if (!selectedFile) return
 
-    // Client-side credit check
-    if (userCredits !== null && userCredits <= 0) {
-      toast.error('Insufficient credits. Please purchase a plan to continue.')
+    if (!includeNarration && !includeSummary && !includeExplanation) {
+      toast.error('Please select at least one output option.')
       return
     }
 
@@ -71,9 +45,15 @@ export default function UploadPage() {
     setUploadProgress(0)
 
     try {
-      const token = await getToken()
-      if (!token) {
-        throw new Error('You must be signed in to upload a file.')
+      // Determine Conversion Mode based on selections
+      let mode = 'full'
+      if (includeNarration) {
+        if (includeExplanation) mode = 'full_explanation'
+        // includeSummary is passed as a separate flag
+      } else {
+        if (includeSummary && includeExplanation) mode = 'summary_explanation'
+        else if (includeExplanation) mode = 'explanation'
+        else if (includeSummary) mode = 'summary'
       }
 
       const formData = new FormData()
@@ -82,14 +62,14 @@ export default function UploadPage() {
       formData.append('voice_type', voiceType)
       formData.append('reading_speed', readingSpeed.toString())
       formData.append('include_summary', includeSummary.toString())
-      formData.append('conversion_mode', conversionMode)
+      formData.append('conversion_mode', mode)
 
       // Simulate progress
       const progressInterval = setInterval(() => {
         setUploadProgress((prev) => Math.min(prev + 10, 90))
       }, 200)
 
-      const response = await createJob(formData, token)
+      const response = await createJob(formData)
 
       clearInterval(progressInterval)
       setUploadProgress(100)
@@ -105,16 +85,7 @@ export default function UploadPage() {
       }, 3000)
     } catch (error: any) {
       console.error('Upload failed:', error)
-
-      let errorMessage = 'Upload failed. Please try again.'
-
-      if (error?.response?.status === 401) {
-        errorMessage = 'Your session has expired. Please sign out and sign in again to continue.'
-      } else if (error instanceof Error) {
-        errorMessage = error.message
-      }
-
-      toast.error(errorMessage)
+      toast.error(error?.message || 'Upload failed. Please try again.')
       setUploadProgress(0)
     } finally {
       setIsUploading(false)
@@ -221,25 +192,44 @@ export default function UploadPage() {
               {/* Voice Selection */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Voice
+                  Select Provider & Voice
                 </label>
+                <div className="flex gap-4 mb-4">
+                  <button
+                    onClick={() => { setVoiceProvider('openai'); setVoiceType('alloy'); }}
+                    className={`flex-1 py-2 rounded-md border ${voiceProvider === 'openai' ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-700 border-gray-300'}`}
+                  >
+                    OpenAI
+                  </button>
+                  <button
+                    onClick={() => { setVoiceProvider('google'); setVoiceType('en-US-Standard-C'); }}
+                    className={`flex-1 py-2 rounded-md border ${voiceProvider === 'google' ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-700 border-gray-300'}`}
+                  >
+                    Google
+                  </button>
+                </div>
                 <select
                   value={voiceType}
                   onChange={(e) => setVoiceType(e.target.value)}
                   className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-900"
                 >
-                  <optgroup label="Standard Voices">
-                    <option value="us_female_std">US Female (Standard)</option>
-                    <option value="us_male_std">US Male (Standard)</option>
-                    <option value="gb_female_std">UK Female (Standard)</option>
-                    <option value="gb_male_std">UK Male (Standard)</option>
-                  </optgroup>
-                  <optgroup label="Premium (HD) Voices">
-                    <option value="us_female_premium">US Female (Premium)</option>
-                    <option value="us_male_premium">US Male (Premium)</option>
-                    <option value="gb_female_premium">UK Female (Premium)</option>
-                    <option value="gb_male_premium">UK Male (Premium)</option>
-                  </optgroup>
+                  {voiceProvider === 'openai' ? (
+                    <>
+                      <option value="alloy">Alloy</option>
+                      <option value="echo">Echo</option>
+                      <option value="fable">Fable</option>
+                      <option value="onyx">Onyx</option>
+                      <option value="nova">Nova</option>
+                      <option value="shimmer">Shimmer</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="en-US-Standard-C">Standard Female (C)</option>
+                      <option value="en-US-Standard-D">Standard Male (D)</option>
+                      <option value="en-US-Wavenet-C">Wavenet Female (C)</option>
+                      <option value="en-US-Wavenet-D">Wavenet Male (D)</option>
+                    </>
+                  )}
                 </select>
               </div>
 
@@ -259,52 +249,55 @@ export default function UploadPage() {
                 />
               </div>
 
-              {/* Conversion Mode */}
+              {/* Output Options */}
               <div className="md:col-span-2 space-y-3">
                 <label className="block text-sm font-medium text-gray-700">
-                  Conversion Mode
+                  Audio Output Options
                 </label>
-                <div className="flex flex-wrap gap-4">
-                  {[
-                    { id: 'full', label: 'Word-for-Word', desc: 'Convert the entire document text' },
-                    { id: 'summary', label: 'Summary Only', desc: 'Convert an AI-generated summary' },
-                    { id: 'explanation', label: 'Concept Explanation', desc: 'Explain core concepts in simple terms' },
-                    { id: 'summary_explanation', label: 'Summary & Explanation', desc: 'Both AI summary and concept explanation' }
-                  ].map((mode) => (
-                    <label key={mode.id} className={`flex-1 min-w-[200px] cursor-pointer border rounded-lg p-3 transition-all ${conversionMode === mode.id ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-gray-200 hover:border-gray-300'}`}>
-                      <input
-                        type="radio"
-                        name="conversionMode"
-                        value={mode.id}
-                        checked={conversionMode === mode.id}
-                        onChange={(e) => setConversionMode(e.target.value)}
-                        className="sr-only"
-                      />
-                      <p className="font-semibold text-gray-900">{mode.label}</p>
-                      <p className="text-xs text-gray-500 mt-1">{mode.desc}</p>
-                    </label>
-                  ))}
-                </div>
-              </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Full Narration */}
+                  <label className={`flex items-start p-3 border rounded-lg cursor-pointer transition-all ${includeNarration ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-gray-200 hover:border-gray-300'}`}>
+                    <input
+                      type="checkbox"
+                      checked={includeNarration}
+                      onChange={(e) => setIncludeNarration(e.target.checked)}
+                      className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <div className="ml-3">
+                      <span className="block text-sm font-semibold text-gray-900">Word-for-Word</span>
+                      <span className="block text-xs text-gray-500 mt-1">Full commercial extraction</span>
+                    </div>
+                  </label>
 
-              {/* Include Summary (Only show if not in summary/explanation mode) */}
-              {conversionMode === 'full' && (
-                <div className="flex items-center md:col-span-2 mt-2">
-                  <input
-                    id="include-summary"
-                    type="checkbox"
-                    checked={includeSummary}
-                    onChange={(e) => setIncludeSummary(e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label
-                    htmlFor="include-summary"
-                    className="ml-2 block text-sm text-gray-900"
-                  >
-                    Prepend AI-generated summary to the full audio
+                  {/* Summary */}
+                  <label className={`flex items-start p-3 border rounded-lg cursor-pointer transition-all ${includeSummary ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-gray-200 hover:border-gray-300'}`}>
+                    <input
+                      type="checkbox"
+                      checked={includeSummary}
+                      onChange={(e) => setIncludeSummary(e.target.checked)}
+                      className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <div className="ml-3">
+                      <span className="block text-sm font-semibold text-gray-900">AI Summary</span>
+                      <span className="block text-xs text-gray-500 mt-1">Concise overview of content</span>
+                    </div>
+                  </label>
+
+                  {/* Explanation */}
+                  <label className={`flex items-start p-3 border rounded-lg cursor-pointer transition-all ${includeExplanation ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-gray-200 hover:border-gray-300'}`}>
+                    <input
+                      type="checkbox"
+                      checked={includeExplanation}
+                      onChange={(e) => setIncludeExplanation(e.target.checked)}
+                      className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <div className="ml-3">
+                      <span className="block text-sm font-semibold text-gray-900">Concept Explanation</span>
+                      <span className="block text-xs text-gray-500 mt-1">Educational breakdown</span>
+                    </div>
                   </label>
                 </div>
-              )}
+              </div>
             </div>
           </div>
         )}
@@ -314,20 +307,10 @@ export default function UploadPage() {
           <div className="mt-8 text-center">
             <button
               onClick={handleUpload}
-              disabled={creditsLoading}
-              className={`px-8 py-3 rounded-lg font-semibold text-lg flex items-center space-x-2 mx-auto ${creditsLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'} text-white`}
+              className="px-8 py-3 rounded-lg font-semibold text-lg flex items-center space-x-2 mx-auto bg-blue-600 hover:bg-blue-700 text-white"
             >
-              {creditsLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  <span>Checking Credits...</span>
-                </>
-              ) : (
-                <>
-                  <Upload className="h-5 w-5" />
-                  <span>Start Conversion</span>
-                </>
-              )}
+              <Upload className="h-5 w-5" />
+              <span>Start Conversion</span>
             </button>
           </div>
         )}
@@ -359,17 +342,6 @@ export default function UploadPage() {
             </div>
           </div>
         )}
-
-        {/* Error Handling */}
-        <div className="mt-8 text-center text-sm text-gray-500">
-          <div className="flex items-center justify-center space-x-1">
-            <AlertCircle className="h-4 w-4" />
-            <span>
-              Having trouble? Make sure you're signed in and your file is under
-              50MB.
-            </span>
-          </div>
-        </div>
       </div>
     </div>
   )

@@ -5,13 +5,32 @@ import os
 import sys
 
 # Add the backend directory to Python path
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "backend"))
+backend_dir = os.path.join(os.path.dirname(__file__), "..", "backend")
+sys.path.append(backend_dir)
+
+# Load environment variables from .env if it exists
+try:
+    from dotenv import load_dotenv
+    # Look for .env in both root and backend
+    load_dotenv(os.path.join(backend_dir, ".env"))
+    load_dotenv(os.path.join(backend_dir, "..", ".env"))
+    # Also support the temporary file the user created for testing
+    load_dotenv(os.path.join(backend_dir, "copy.env.antigravity"))
+except ImportError:
+    pass
 
 # Create Celery app
+redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+broker_url = os.getenv("CELERY_BROKER_URL", redis_url)
+result_backend = os.getenv("CELERY_RESULT_BACKEND", redis_url)
+
+logger.info(f"Connecting to Celery Broker: {broker_url}")
+logger.info(f"Using Result Backend: {result_backend}")
+
 celery_app = Celery(
     "pdf2audiobook_worker",
-    broker=os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0"),
-    backend=os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0"),
+    broker=broker_url,
+    backend=result_backend,
     include=["worker.tasks"],
 )
 
