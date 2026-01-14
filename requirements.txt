@@ -114,7 +114,6 @@ httpx==0.28.1
     # via
     #   elevenlabs
     #   openai
-    #   paddle-sdk
 idna==3.11
     # via
     #   anyio
@@ -147,7 +146,6 @@ packaging==25.0
     #   limits
     #   pytesseract
     #   pytest
-paddle-python-sdk
 passlib==1.7.4
     # via pdf2audiobook
 pdf2image==1.17.0
@@ -188,7 +186,6 @@ pydantic==2.12.3
     #   elevenlabs
     #   fastapi
     #   openai
-    #   paddle-sdk
     #   pdf2audiobook
     #   pydantic-settings
 pydantic-core==2.41.4

@@ -13,9 +13,6 @@ def mock_user():
     return User(id=1, email="test@test.com")
 
 
-
-
-
 # Tests
 def test_create_job_success(client: TestClient, db_session):
     with (
@@ -57,7 +54,7 @@ def test_update_job_manual(client: TestClient, db_session, mock_user):
         original_filename="test.pdf",
         pdf_s3_key="test.pdf",
         user_id=mock_user.id,
-        status=JobStatus.PENDING,
+        status=JobStatus.pending,
         progress_percentage=0,
     )
     db_session.add(job)
@@ -75,7 +72,7 @@ def test_update_job_manual(client: TestClient, db_session, mock_user):
 
     # 4. Verify the data in the DB
     updated_job = db_session.query(Job).filter(Job.id == 1).first()
-    assert updated_job.status == JobStatus.PROCESSING
+    assert updated_job.status == JobStatus.processing
     assert updated_job.progress_percentage == 50
 
 
@@ -85,7 +82,7 @@ def test_get_job_status(client: TestClient, db_session, mock_user):
         original_filename="test.pdf",
         pdf_s3_key="test.pdf",
         user_id=mock_user.id,
-        status=JobStatus.COMPLETED,
+        status=JobStatus.completed,
         progress_percentage=100,
         audio_s3_url="http://s3.com/audio.mp3",
     )

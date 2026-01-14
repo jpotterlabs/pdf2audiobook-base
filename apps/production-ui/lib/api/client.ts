@@ -1,18 +1,9 @@
-// API client with Clerk authentication
+// API client for base pipeline
 
-// Default to production URL unless overridden by NEXT_PUBLIC_API_URL
-// This simplifies the deployment by removing "sandbox" vs "production" toggles
 const rawUrl = process.env.NEXT_PUBLIC_API_URL
-const defaultUrl = "https://api.pdf2audiobook.xyz"
+const defaultUrl = "http://localhost:8000"
 
 let finalUrl = rawUrl || defaultUrl
-
-// Safety Check: Force Production URL if NODE_ENV is production
-// This overrides any stale "localhost" env vars on Vercel
-if (process.env.NODE_ENV === "production" && (finalUrl.includes("localhost") || !finalUrl)) {
-  finalUrl = "https://api.pdf2audiobook.xyz"
-}
-
 
 const API_BASE_URL = finalUrl
 
@@ -37,12 +28,10 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}, token?
     ...options.headers,
   }
 
-  // Add authorization header if token is provided
   if (token) {
     headers["Authorization"] = `Bearer ${token}`
   }
 
-  // Don't set Content-Type for FormData, browser will set it with boundary
   if (!(options.body instanceof FormData)) {
     headers["Content-Type"] = "application/json"
   }
@@ -67,89 +56,49 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}, token?
 }
 
 export const api = {
-  // Auth endpoints
+  // Auth endpoints (Simplified)
   auth: {
-    verify: async (token: string) => {
-      const response = await fetchWithAuth("/api/v1/auth/verify", {
-        method: "POST",
-        body: JSON.stringify({ token }),
-      })
-      return response.json()
-    },
-
-    getMe: async (token: string) => {
-      const response = await fetchWithAuth("/api/v1/auth/me", { method: "GET" }, token)
-      return response.json()
-    },
-
-    updateMe: async (token: string, data: { first_name?: string; last_name?: string }) => {
-      const response = await fetchWithAuth(
-        "/api/v1/auth/me",
-        {
-          method: "PUT",
-          body: JSON.stringify(data),
-        },
-        token,
-      )
+    getMe: async (token?: string) => {
+      const response = await fetchWithAuth("/api/v1/auth/me", { method: "GET" }, token || "base-token")
       return response.json()
     },
   },
 
   // Job endpoints
   jobs: {
-    create: async (token: string, jobData: FormData) => {
+    create: async (jobData: FormData, token?: string) => {
       const response = await fetchWithAuth(
         "/api/v1/jobs/",
         {
           method: "POST",
           body: jobData,
         },
-        token,
+        token || "base-token",
       )
       return response.json()
     },
 
-    list: async (token: string, skip = 0, limit = 50) => {
-      const response = await fetchWithAuth(`/api/v1/jobs/?skip=${skip}&limit=${limit}`, { method: "GET" }, token)
+    list: async (skip = 0, limit = 50, token?: string) => {
+      const response = await fetchWithAuth(`/api/v1/jobs/?skip=${skip}&limit=${limit}`, { method: "GET" }, token || "base-token")
       return response.json()
     },
 
-    get: async (token: string, jobId: number) => {
-      const response = await fetchWithAuth(`/api/v1/jobs/${jobId}`, { method: "GET" }, token)
+    get: async (jobId: number, token?: string) => {
+      const response = await fetchWithAuth(`/api/v1/jobs/${jobId}`, { method: "GET" }, token || "base-token")
       return response.json()
     },
 
-    getStatus: async (token: string, jobId: number) => {
-      const response = await fetchWithAuth(`/api/v1/jobs/${jobId}/status`, { method: "GET" }, token)
+    getStatus: async (jobId: number, token?: string) => {
+      const response = await fetchWithAuth(`/api/v1/jobs/${jobId}/status`, { method: "GET" }, token || "base-token")
       return response.json()
     },
 
-    delete: async (token: string, jobId: number) => {
-      await fetchWithAuth(`/api/v1/jobs/${jobId}`, { method: "DELETE" }, token)
+    delete: async (jobId: number, token?: string) => {
+      await fetchWithAuth(`/api/v1/jobs/${jobId}`, { method: "DELETE" }, token || "base-token")
     },
 
-    cleanup: async (token: string) => {
-      const response = await fetchWithAuth("/api/v1/jobs/cleanup", { method: "DELETE" }, token)
-      return response.json()
-    },
-  },
-
-  // Payment endpoints
-  payments: {
-    getProducts: async () => {
-      const response = await fetchWithAuth("/api/v1/payments/products", { method: "GET" })
-      return response.json()
-    },
-
-    createCheckoutUrl: async (token: string, productId: number) => {
-      const response = await fetchWithAuth(
-        "/api/v1/payments/checkout-url",
-        {
-          method: "POST",
-          body: JSON.stringify({ product_id: productId }),
-        },
-        token,
-      )
+    cleanup: async (token?: string) => {
+      const response = await fetchWithAuth("/api/v1/jobs/cleanup", { method: "DELETE" }, token || "base-token")
       return response.json()
     },
   },

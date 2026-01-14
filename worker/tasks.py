@@ -94,8 +94,7 @@ def process_pdf_task(self, job_id: int):
         job.audio_s3_key = audio_key
         job.audio_s3_url = audio_url
         
-        # Deduct credits using service logic (AFTER successful upload)
-        job_service.deduct_credits(job.user_id, final_cost)
+        # job_service.deduct_credits(job.user_id, final_cost) # Removed credit system
         
         job_service.update_job_status(
             job_id, 

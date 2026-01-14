@@ -5,13 +5,48 @@ import os
 import sys
 
 # Add the backend directory to Python path
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "backend"))
+backend_dir = os.path.join(os.path.dirname(__file__), "..", "backend")
+sys.path.append(backend_dir)
+
+# Load environment variables from .env if it exists
+try:
+    from dotenv import load_dotenv
+    # Look for .env in both root and backend
+    load_dotenv(os.path.join(backend_dir, ".env"))
+    load_dotenv(os.path.join(backend_dir, "..", ".env"))
+except ImportError:
+    pass
 
 # Create Celery app
+redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+broker_url = os.getenv("CELERY_BROKER_URL", redis_url)
+result_backend = os.getenv("CELERY_RESULT_BACKEND", redis_url)
+
+def _redact_url(url: str) -> str:
+    from urllib.parse import urlparse
+    try:
+        parsed = urlparse(url)
+        if parsed.password:
+            # Reconstruct URL without password
+            netloc = parsed.hostname
+            if parsed.port:
+                netloc = f"{netloc}:{parsed.port}"
+            if parsed.username:
+                netloc = f"{parsed.username}:***@{netloc}"
+            else:
+                netloc = f"***@{netloc}"
+            return parsed._replace(netloc=netloc).geturl()
+        return url
+    except Exception:
+        return "<redacted>"
+
+logger.info(f"Connecting to Celery Broker: {_redact_url(broker_url)}")
+logger.info(f"Using Result Backend: {_redact_url(result_backend)}")
+
 celery_app = Celery(
     "pdf2audiobook_worker",
-    broker=os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0"),
-    backend=os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0"),
+    broker=broker_url,
+    backend=result_backend,
     include=["worker.tasks"],
 )
 

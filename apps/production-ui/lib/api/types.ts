@@ -6,10 +6,6 @@ export type ConversionMode = "full" | "summary" | "explanation" | "summary_expla
 
 export type VoiceProvider = "openai" | "google" | "aws_polly" | "azure" | "eleven_labs"
 
-export type SubscriptionTier = "free" | "pro" | "enterprise"
-
-export type ProductType = "subscription" | "one_time"
-
 export interface Job {
   id: number
   original_filename: string
@@ -39,24 +35,6 @@ export interface User {
   email: string
   first_name?: string | null
   last_name?: string | null
-  auth_provider_id: string
-  subscription_tier: SubscriptionTier
-  paddle_customer_id?: string | null
-  credit_balance: number
-  monthly_credits_used: number
-  created_at: string
-  updated_at?: string | null
-}
-
-export interface Product {
-  id: number
-  name: string
-  price: number
-  credits_included: number
-  type: ProductType
-  paddle_product_id: string
-  is_active: boolean
-  subscription_tier: SubscriptionTier | null
   created_at: string
   updated_at?: string | null
 }
@@ -68,12 +46,4 @@ export interface CreateJobRequest {
   reading_speed?: number
   include_summary?: boolean
   conversion_mode?: ConversionMode
-}
-
-export interface CheckoutURLRequest {
-  product_id: number
-}
-
-export interface CheckoutURLResponse {
-  checkout_url: string
 }

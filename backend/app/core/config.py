@@ -1,5 +1,5 @@
 from pydantic import field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List, Optional, Any
 import os
 from loguru import logger
@@ -43,19 +43,6 @@ class Settings(BaseSettings):
     AWS_ENDPOINT_URL: Optional[str] = None
     S3_BUCKET_NAME: Optional[str] = None
 
-    # Authentication (Clerk)
-    CLERK_PEM_PUBLIC_KEY: Optional[str] = None
-    CLERK_JWT_ISSUER: Optional[str] = None
-    CLERK_JWT_AUDIENCE: Optional[str] = None
-
-    # Paddle
-    PADDLE_VENDOR_ID: Optional[int] = None
-    PADDLE_VENDOR_AUTH_CODE: Optional[str] = None
-    PADDLE_API_KEY: Optional[str] = None
-    PADDLE_PUBLIC_KEY: Optional[str] = None
-    PADDLE_WEBHOOK_SECRET_KEY: Optional[str] = None
-    PADDLE_ENVIRONMENT: str = "production"
-
     # Frontend URLs for CORS
     FRONTEND_URL: str = "https://www.pdf2audiobook.xyz"
 
@@ -68,6 +55,12 @@ class Settings(BaseSettings):
         if self.FRONTEND_URL and self.FRONTEND_URL not in self.ALLOWED_HOSTS:
             if isinstance(self.ALLOWED_HOSTS, list):
                 self.ALLOWED_HOSTS.append(self.FRONTEND_URL)
+
+        from urllib.parse import urlparse
+        parsed = urlparse(self.REDIS_URL)
+        port_segment = f":{parsed.port}" if parsed.port is not None else ""
+        masked_url = f"{parsed.scheme}://{parsed.hostname}{port_segment}{parsed.path}"
+        logger.info(f"Using Redis URL: {masked_url}")
 
         # Diagnostic logging for voice environment variables
         voice_vars = {k: v for k, v in os.environ.items() if k.startswith("GOOGLE_VOICE_")}
@@ -83,6 +76,16 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: Optional[str] = None
     LLM_MODEL: str = "google/gemini-2.0-flash-001:free"
 
+    # Local / Custom OpenAI TTS
+    OPENAI_BASE_URL: Optional[str] = None
+    OPENAI_TTS_MODEL: str = "tts-1"
+    
+    model_config = SettingsConfigDict(
+        env_file=(".env",), 
+        extra="ignore",
+        case_sensitive=True
+    )
+
     # Google TTS Voices
     GOOGLE_VOICE_US_FEMALE_STD: str = "en-US-Wavenet-C"
     GOOGLE_VOICE_US_MALE_STD: str = "en-US-Wavenet-I"
@@ -94,8 +97,12 @@ class Settings(BaseSettings):
     GOOGLE_VOICE_GB_MALE_PREMIUM: str = ""
 
     # Google TTS Costs (per 1M characters)
-    GOOGLE_TTS_COST_WAVENET: float = 4.0
-    GOOGLE_TTS_COST_CHIRP: float = 30.0
+    GOOGLE_TTS_COST_STANDARD: float = 4.0
+    GOOGLE_TTS_COST_PREMIUM: float = 30.0
+
+    # LLM Costs (per 1k tokens - approximate defaults for Flash 2.0/1.5)
+    LLM_COST_INPUT_PER_1K: float = 0.0001
+    LLM_COST_OUTPUT_PER_1K: float = 0.0004
 
     # File upload limits
     MAX_FILE_SIZE_MB: int = 50
@@ -118,18 +125,7 @@ class Settings(BaseSettings):
             return [i.strip() for i in v.split(",") if i.strip()]
         return v
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
 
-        @classmethod
-        def customize_sources(cls, init_settings, env_settings, file_secret_settings):
-            """Customize settings sources with environment-specific priority."""
-            return (
-                init_settings,
-                env_settings,  # Environment variables
-                file_secret_settings,  # .env file
-            )
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
@@ -138,24 +134,6 @@ class Settings(BaseSettings):
             return v.replace("postgres://", "postgresql://", 1)
         return v
 
-    @field_validator("CLERK_PEM_PUBLIC_KEY", mode="before")
-    @classmethod
-    def fix_pem_formatting(cls, v: Any) -> Any:
-        if isinstance(v, str):
-            # Strip quotes and whitespace that might be added by Render/Env
-            v = v.strip().strip('"').strip("'").strip()
-            
-            # Replace literal "\n" characters with actual newlines
-            v = v.replace("\\n", "\n")
-            
-            # Ensure it has the headers/footers if missing
-            if "-----BEGIN PUBLIC KEY-----" not in v:
-                v = f"-----BEGIN PUBLIC KEY-----\n{v}\n-----END PUBLIC KEY-----"
-            
-            # Diagnostic info (safe)
-            logger.debug(f"CLERK_PEM_PUBLIC_KEY structure: length={len(v)}, "
-                         f"starts_with='{v[:20]}...', ends_with='...{v[-20:]}'")
-        return v
 
     @property
     def is_production(self) -> bool:
@@ -178,9 +156,6 @@ class Settings(BaseSettings):
             required_settings = [
                 ("DATABASE_URL", self.DATABASE_URL),
                 ("SECRET_KEY", self.SECRET_KEY),
-                ("CLERK_PEM_PUBLIC_KEY", self.CLERK_PEM_PUBLIC_KEY),
-                ("CLERK_JWT_ISSUER", self.CLERK_JWT_ISSUER),
-                ("CLERK_JWT_AUDIENCE", self.CLERK_JWT_AUDIENCE),
             ]
 
             missing = [name for name, value in required_settings if not value]

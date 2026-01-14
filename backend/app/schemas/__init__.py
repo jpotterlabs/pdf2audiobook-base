@@ -4,14 +4,6 @@ from datetime import datetime
 from enum import Enum
 
 
-class SubscriptionTier(str, Enum):
-    """Enumeration for user subscription tiers."""
-
-    free = "free"
-    pro = "pro"
-    enterprise = "enterprise"
-
-
 class JobStatus(str, Enum):
     """Enumeration for the status of a PDF processing job."""
 
@@ -20,13 +12,6 @@ class JobStatus(str, Enum):
     completed = "completed"
     failed = "failed"
     cancelled = "cancelled"
-
-
-class ProductType(str, Enum):
-    """Enumeration for product types (subscription or one-time purchase)."""
-
-    subscription = "subscription"
-    one_time = "one_time"
 
 
 class VoiceProvider(str, Enum):
@@ -46,6 +31,7 @@ class ConversionMode(str, Enum):
     summary = "summary"
     explanation = "explanation"
     summary_explanation = "summary_explanation"
+    full_explanation = "full_explanation"
 
 
 # --- User Schemas ---
@@ -66,13 +52,9 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    """Schema for creating a new user, including their third-party auth ID."""
+    """Schema for creating a new user."""
 
-    auth_provider_id: str = Field(
-        ...,
-        json_schema_extra={"example": "clerk_123xyz"},
-        description="Unique identifier from the authentication provider (e.g., Clerk).",
-    )
+    pass
 
 
 class UserUpdate(BaseModel):
@@ -91,27 +73,6 @@ class User(UserBase):
 
     id: int = Field(
         ..., json_schema_extra={"example": 1}, description="Internal unique identifier for the user."
-    )
-    auth_provider_id: str = Field(
-        ...,
-        json_schema_extra={"example": "clerk_123xyz"},
-        description="Unique identifier from the authentication provider.",
-    )
-    subscription_tier: SubscriptionTier = Field(
-        ...,
-        json_schema_extra={"example": SubscriptionTier.pro},
-        description="User's current subscription tier.",
-    )
-    paddle_customer_id: Optional[str] = Field(
-        None, json_schema_extra={"example": "ctm_123abc"}, description="User's customer ID from Paddle."
-    )
-    one_time_credits: int = Field(
-        ..., json_schema_extra={"example": 10}, description="Number of one-time credits the user has."
-    )
-    monthly_credits_used: int = Field(
-        ...,
-        json_schema_extra={"example": 5},
-        description="Number of monthly subscription credits used in the current billing cycle.",
     )
     created_at: datetime = Field(
         ..., description="Timestamp when the user was created."
@@ -183,6 +144,8 @@ class JobUpdate(BaseModel):
     )
 
     estimated_cost: Optional[float] = Field(None, description="The estimated cost of the job.")
+    chars_processed: Optional[int] = Field(None, description="Total characters processed.")
+    tokens_used: Optional[int] = Field(None, description="Total LLM tokens used.")
 
 
 class Job(JobBase):
@@ -224,6 +187,8 @@ class Job(JobBase):
         None, description="An error message if the job failed."
     )
     estimated_cost: float = Field(0.0, description="The estimated cost of the job.")
+    chars_processed: int = Field(0, description="Total characters processed.")
+    tokens_used: int = Field(0, description="Total LLM tokens used.")
     created_at: datetime = Field(..., description="Timestamp when the job was created.")
     started_at: Optional[datetime] = Field(
         None, description="Timestamp when processing started."
@@ -255,28 +220,3 @@ class TokenData(BaseModel):
     user_id: Optional[int] = Field(
         None, description="The user ID associated with the token."
     )
-# --- Product Schemas ---
-
-
-class ProductBase(BaseModel):
-    """Base schema for product properties."""
-
-    name: str = Field(..., description="The name of the product.")
-    description: Optional[str] = Field(None, description="A detailed description of the product.")
-    price: float = Field(..., description="The price of the product.")
-    currency: str = Field("USD", description="The currency for the price.")
-    credits_included: int = Field(..., description="Number of credits or monthly job limit included.")
-    type: ProductType = Field(..., description="Product type: subscription or one-time.")
-    subscription_tier: Optional[SubscriptionTier] = Field(None, description="The associated tier for subscriptions.")
-
-
-class Product(ProductBase):
-    """Schema for representing a product, returned from the API."""
-
-    id: int = Field(..., description="Internal unique identifier for the product.")
-    paddle_product_id: str = Field(..., description="The product's ID within Paddle.")
-    is_active: bool = Field(True, description="Whether the product is currently available for purchase.")
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-
-    model_config = ConfigDict(from_attributes=True)

@@ -2,13 +2,12 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@clerk/nextjs"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useCredits } from "@/lib/contexts/credits-context"
 import { api, APIError } from "@/lib/api/client"
-import { VOICE_OPTIONS, PROVIDER_NAMES } from "@/lib/constants/voices"
+import { VOICE_OPTIONS } from "@/lib/constants/voices"
 import type { VoiceProvider, ConversionMode } from "@/lib/api/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -16,11 +15,9 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { FileUploadZone } from "@/components/upload/file-upload-zone"
-import { Loader2, Sparkles, AlertTriangle } from "lucide-react"
+import { Loader2, Sparkles } from "lucide-react"
 import { toast } from "sonner"
-import Link from "next/link"
 
 const uploadSchema = z.object({
   file: z.instanceof(File).nullable(),
@@ -35,8 +32,7 @@ type UploadFormValues = z.infer<typeof uploadSchema>
 
 export function UploadForm() {
   const router = useRouter()
-  const { getToken } = useAuth()
-  const { credits, loading: creditsLoading, user, refreshCredits } = useCredits()
+  const { refreshCredits } = useCredits()
   const [uploading, setUploading] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
@@ -65,12 +61,6 @@ export function UploadForm() {
     setUploading(true)
 
     try {
-      const token = await getToken()
-      if (!token) {
-        toast.error("Authentication failed")
-        return
-      }
-
       const formData = new FormData()
       formData.append("file", selectedFile)
       formData.append("voice_provider", data.voice_provider)
@@ -79,43 +69,21 @@ export function UploadForm() {
       formData.append("include_summary", data.include_summary.toString())
       formData.append("conversion_mode", data.conversion_mode)
 
-      await api.jobs.create(token, formData)
+      await api.jobs.create(formData)
 
       await refreshCredits()
       toast.success("Job created successfully!")
       router.push("/jobs")
     } catch (error) {
       console.error("Upload failed:", error)
-      if (error instanceof APIError && error.status === 402) {
-        toast.error("Insufficient credits. Please add credits to continue.")
-        router.push("/pricing")
-      } else {
-        toast.error(error instanceof APIError ? error.message : "Failed to create job. Please try again.")
-      }
+      toast.error(error instanceof APIError ? error.message : "Failed to create job. Please try again.")
     } finally {
       setUploading(false)
     }
   }
 
-  const hasLowCredits = !creditsLoading && credits <= 0
-  const isOnFreePlan = user?.subscription_tier === "free"
-  const shouldDisableSubmit = hasLowCredits && isOnFreePlan
-
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      {shouldDisableSubmit && (
-        <Alert className="border-yellow-500/50 bg-yellow-500/10">
-          <AlertTriangle className="h-4 w-4 text-yellow-500" />
-          <AlertDescription className="text-yellow-500">
-            Your credit balance is low. Please{" "}
-            <Link href="/pricing" className="underline font-semibold">
-              add credits
-            </Link>{" "}
-            to create new audiobooks.
-          </AlertDescription>
-        </Alert>
-      )}
-
       <Card className="glass">
         <CardContent className="p-6">
           <FileUploadZone
@@ -164,7 +132,7 @@ export function UploadForm() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="glass-strong">
-                {VOICE_OPTIONS[voiceProvider as VoiceProvider].map((voice: any) => (
+                {VOICE_OPTIONS[voiceProvider as VoiceProvider]?.map((voice: any) => (
                   <SelectItem key={voice.id} value={voice.id}>
                     <div>
                       <div>{voice.name}</div>
@@ -254,7 +222,7 @@ export function UploadForm() {
       </Card>
 
       <div className="flex items-center gap-4">
-        <Button type="submit" size="lg" disabled={!selectedFile || uploading || shouldDisableSubmit} className="flex-1">
+        <Button type="submit" size="lg" disabled={!selectedFile || uploading} className="flex-1">
           {uploading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />

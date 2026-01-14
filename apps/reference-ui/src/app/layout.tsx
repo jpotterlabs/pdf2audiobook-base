@@ -1,8 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import { ClerkProvider } from '@clerk/nextjs'
 import Header from '../components/Header'
-import { CreditsProvider } from '../contexts/CreditsContext'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -11,29 +9,6 @@ export const metadata: Metadata = {
   title: 'PDF2AudioBook - Convert PDFs to Audiobooks',
   description:
     'A modern SaaS platform for converting scientific PDFs and novels into high-quality audiobooks or AI-powered summaries.',
-  keywords: [
-    'PDF',
-    'audiobook',
-    'text-to-speech',
-    'OCR',
-    'AI summaries',
-    'research papers',
-    'scientific articles',
-    'novels',
-  ],
-  authors: [{ name: 'PDF2AudioBook Team' }],
-  openGraph: {
-    title: 'PDF2AudioBook - Convert PDFs to Audiobooks',
-    description:
-      'Transform your research papers and novels into immersive listening experiences or concise AI summaries.',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'PDF2AudioBook - Convert PDFs to Audiobooks',
-    description:
-      'Transform your research papers and novels into immersive listening experiences or concise AI summaries.',
-  },
 }
 
 export default function RootLayout({
@@ -44,16 +19,7 @@ export default function RootLayout({
   const devBypassPayments =
     process.env.NEXT_PUBLIC_DEV_BYPASS_PAYMENTS === 'true'
 
-  const env = process.env.NEXT_PUBLIC_ENVIRONMENT || "sandbox"
-  const publishableKey =
-    env === "production"
-      ? process.env.NEXT_PUBLIC_PROD_CLERK_PUBLISHABLE_KEY || ''
-      : process.env.NEXT_PUBLIC_SANDBOX_CLERK_PUBLISHABLE_KEY || ''
-
-  const hasClerkKey =
-    typeof publishableKey === 'string' && publishableKey.startsWith('pk_')
-
-  const AppShell = (
+  return (
     <html lang="en">
       <body
         className={`${inter.className} bg-slate-50 text-slate-900 antialiased`}
@@ -93,17 +59,5 @@ export default function RootLayout({
         </div>
       </body>
     </html>
-  )
-
-  if (!hasClerkKey) {
-    // In environments without a valid Clerk publishable key (e.g. local/CI),
-    // render the app shell without ClerkProvider to avoid build-time failures.
-    return AppShell
-  }
-
-  return (
-    <ClerkProvider publishableKey={publishableKey}>
-      <CreditsProvider>{AppShell}</CreditsProvider>
-    </ClerkProvider>
   )
 }

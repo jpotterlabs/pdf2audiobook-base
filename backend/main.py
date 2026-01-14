@@ -3,7 +3,7 @@ import time
 
 import boto3
 import redis
-from app.api.v1 import auth, jobs, payments, webhooks
+from app.api.v1 import auth, jobs
 from app.core.config import settings
 from app.core.database import SessionLocal, get_db
 from app.core.exceptions import (
@@ -58,13 +58,12 @@ app = FastAPI(
     * **Multiple TTS Providers**: Support for OpenAI, Google Cloud, AWS Polly, Azure, and ElevenLabs
     * **Voice Customization**: Choose from various voices and adjust reading speed
     * **AI-Powered Summaries**: Generate intelligent summaries for complex documents
-    * **Secure Authentication**: JWT-based authentication with Clerk integration
-    * **Usage Tracking**: Monitor credits and subscription usage
+    * **Simple Pipeline**: Lightweight base pipeline for PDF-to-audiobook conversion
+    * **Usage Tracking**: Monitor tokens and characters processed
 
     ## Authentication
 
-    All API endpoints require authentication via JWT tokens obtained from Clerk.
-    Include the token in the Authorization header: `Authorization: Bearer <token>`
+    The base pipeline includes a mock internal authentication for identifying users.
 
     ## Rate Limiting
 
@@ -162,17 +161,20 @@ if cors_from_env:
 elif hosts_from_env:
     allowed_origins = hosts_from_env
 else:
-    if settings.is_production:
-        # In production, require explicit configuration; empty list means CORS disabled.
-        allowed_origins = []
-    else:
-        # Development defaults
-        allowed_origins = [
-            "http://localhost:3000",
-            "http://localhost:3001",
-            "http://127.0.0.1:3000",
-            "http://127.0.0.1:8000",
-        ]
+    allowed_origins = []
+
+# Add development defaults if not in production
+if not settings.is_production:
+    dev_origins = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8000",
+        "http://192.168.0.177:3000",  # Allow specific LAN IP
+    ]
+    for origin in dev_origins:
+        if origin not in allowed_origins:
+            allowed_origins.append(origin)
 
 logger.info(
     f"CORS_ALLOW_ORIGINS={os.getenv('CORS_ALLOW_ORIGINS')!r}, "
@@ -204,8 +206,6 @@ app.add_exception_handler(Exception, general_exception_handler)
 try:
     app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
     app.include_router(jobs.router, prefix="/api/v1/jobs", tags=["Jobs"])
-    app.include_router(payments.router, prefix="/api/v1/payments", tags=["Payments"])
-    app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["Webhooks"])
 except Exception as e:
     logger.error(f"Failed to include routers: {e}")
     # Continue without routers if they fail to import

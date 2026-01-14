@@ -10,7 +10,6 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@clerk/nextjs": "6.34.4",
     "@types/node": "^20.14.9",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
@@ -28,6 +27,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
+    "baseline-browser-mapping": "^2.9.11",
     "eslint": "9.39.1",
     "eslint-config-next": "16.0.1",
     "prettier": "^3.3.2"

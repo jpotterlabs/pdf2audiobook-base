@@ -7,7 +7,7 @@ from datetime import datetime
 def get_test_user(db: Session):
     user = db.query(User).first()
     if not user:
-        user = User(id=1, auth_provider_id="dev_user_123", email="dev@example.com", one_time_credits=0)
+        user = User(id=1, email="dev@example.com")
         db.add(user)
         db.commit()
     return user

@@ -10,14 +10,14 @@ export interface VoiceOption {
 
 export const VOICE_OPTIONS: Record<VoiceProvider, VoiceOption[]> = {
   google: [
-    { id: "en-US-Chirp3-HD-Sulafat", name: "US Female (Premium)", description: "High-quality US English female voice" },
-    { id: "en-US-Wavenet-C", name: "US Female (Standard)", description: "Natural US English female voice" },
-    { id: "en-US-Chirp3-HD-Enceladus", name: "US Male (Premium)", description: "High-quality US English male voice" },
-    { id: "en-US-Wavenet-I", name: "US Male (Standard)", description: "Natural US English male voice" },
-    { id: "en-GB-Chirp3-HD-Despina", name: "UK Female (Premium)", description: "High-quality UK English female voice" },
-    { id: "en-GB-Wavenet-F", name: "UK Female (Standard)", description: "Natural UK English female voice" },
-    { id: "en-GB-Chirp3-HD-Umbriel", name: "UK Male (Premium)", description: "High-quality UK English male voice" },
-    { id: "en-GB-Wavenet-O", name: "UK Male (Standard)", description: "Natural UK English male voice" },
+    { id: "us_female_premium", name: "US Female (Premium)", description: "High-quality US English female voice" },
+    { id: "us_female_std", name: "US Female (Standard)", description: "Natural US English female voice" },
+    { id: "us_male_premium", name: "US Male (Premium)", description: "High-quality US English male voice" },
+    { id: "us_male_std", name: "US Male (Standard)", description: "Natural US English male voice" },
+    { id: "gb_female_premium", name: "UK Female (Premium)", description: "High-quality UK English female voice" },
+    { id: "gb_female_std", name: "UK Female (Standard)", description: "Natural UK English female voice" },
+    { id: "gb_male_premium", name: "UK Male (Premium)", description: "High-quality UK English male voice" },
+    { id: "gb_male_std", name: "UK Male (Standard)", description: "Natural UK English male voice" },
   ],
   openai: [],
   aws_polly: [],

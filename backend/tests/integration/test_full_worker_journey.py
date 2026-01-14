@@ -62,17 +62,19 @@ async def test_full_pdf_to_audiobook_journey(
         original_filename="test.pdf",
         pdf_s3_key="pdfs/1/test.pdf",
         pdf_s3_url="https://s3.amazonaws.com/bucket/pdfs/1/test.pdf",
-        voice_provider=VoiceProvider.OPENAI,
+        voice_provider=VoiceProvider.openai,
         voice_type="alloy",
         reading_speed=1.0,
         include_summary=False,
-        conversion_mode=ConversionMode.FULL,
-        status=JobStatus.PENDING,
+        conversion_mode=ConversionMode.full,
+        status=JobStatus.pending,
         progress_percentage=0,
+        estimated_cost=0.0,
+        chars_processed=0,
+        tokens_used=0,
         created_at=datetime.now()
     )
     mock_job_service_api.create_job.return_value = mock_job
-    mock_job_service_api.can_user_create_job.return_value = True
 
     # Mock file upload
     mock_storage_service_api.upload_file = AsyncMock(return_value="https://s3.amazonaws.com/bucket/pdfs/1/test.pdf")
@@ -102,7 +104,6 @@ async def test_full_pdf_to_audiobook_journey(
     print("✅ Job created successfully with ID:", job_response["id"])
 
     # Verify API calls
-    mock_job_service_api.can_user_create_job.assert_called_once_with(1)
     mock_storage_service_api.upload_file.assert_called_once()
     mock_job_service_api.create_job.assert_called_once()
 
@@ -153,14 +154,17 @@ async def test_full_pdf_to_audiobook_journey(
         original_filename="test.pdf",
         pdf_s3_key="pdfs/1/test.pdf",
         pdf_s3_url="https://s3.amazonaws.com/bucket/pdfs/1/test.pdf",
-        voice_provider=VoiceProvider.OPENAI,
+        voice_provider=VoiceProvider.openai,
         voice_type="alloy",
         reading_speed=1.0,
         include_summary=False,
-        conversion_mode=ConversionMode.FULL,
-        status=JobStatus.COMPLETED,
+        conversion_mode=ConversionMode.full,
+        status=JobStatus.completed,
         audio_s3_url="https://s3.amazonaws.com/bucket/audio/1/1.mp3",
         progress_percentage=100,
+        estimated_cost=0.05,
+        chars_processed=1000,
+        tokens_used=50,
         created_at=datetime.now()
     )
     mock_job_service_api.get_user_job.return_value = completed_job
@@ -226,17 +230,19 @@ async def test_pdf_processing_with_summary_explanation_mode(
         original_filename="science_paper.pdf",
         pdf_s3_key="pdfs/2/science_paper.pdf",
         pdf_s3_url="https://s3.amazonaws.com/bucket/pdfs/2/science_paper.pdf",
-        voice_provider=VoiceProvider.OPENAI,
+        voice_provider=VoiceProvider.openai,
         voice_type="alloy",
         reading_speed=1.2,
         include_summary=False,
-        conversion_mode=ConversionMode.SUMMARY_EXPLANATION,
-        status=JobStatus.PENDING,
+        conversion_mode=ConversionMode.summary_explanation,
+        status=JobStatus.pending,
         progress_percentage=0,
+        estimated_cost=0.0,
+        chars_processed=0,
+        tokens_used=0,
         created_at=datetime.now()
     )
     mock_job_service_api.create_job.return_value = mock_job
-    mock_job_service_api.can_user_create_job.return_value = True
 
     # Mock file upload
     mock_storage_service_api.upload_file = AsyncMock(return_value="https://s3.amazonaws.com/bucket/pdfs/2/science_paper.pdf")
@@ -323,12 +329,15 @@ async def test_worker_error_handling_journey(
         id=3,
         user_id=1,
         pdf_s3_key="corrupt.pdf",
-        voice_provider=VoiceProvider.OPENAI,
+        voice_provider=VoiceProvider.openai,
         voice_type="alloy",
         reading_speed=1.0,
         include_summary=False,
-        conversion_mode=ConversionMode.FULL,
-        status=JobStatus.PENDING
+        conversion_mode=ConversionMode.full,
+        status=JobStatus.pending,
+        estimated_cost=0.0,
+        chars_processed=0,
+        tokens_used=0
     )
 
     mock_db_worker.query.return_value.filter.return_value.first.return_value = failing_job

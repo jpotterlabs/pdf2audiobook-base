@@ -1,8 +1,8 @@
-# --- Environment Files ---
 # Never commit environment files, which contain secrets.
 .env
 .env.*
 .env.local
+!.env.example
 
 
 # --- Service Account Keys ---

@@ -22,16 +22,16 @@ def test_process_pdf_task_success(
     job = Job(
         id=1,
         pdf_s3_key="test.pdf",
-        voice_provider=VoiceProvider.OPENAI,
+        voice_provider=VoiceProvider.openai,
         voice_type="default",
         reading_speed=1.0,
         include_summary=False,
-        conversion_mode=ConversionMode.FULL,
+        conversion_mode=ConversionMode.full,
         user_id=1,
     )
     mock_db.query.return_value.filter.return_value.first.return_value = job
-    mock_storage_service.download_file.return_value = b"%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj\n2 0 obj\n<<\n/Type /Pages\n/Kids [3 0 R]\n/Count 1\n>>\nendobj\n3 0 obj\n<<\n/Type /Page\n/Parent 2 0 R\n/MediaBox [0 0 612 792]\n/Contents 4 0 R\n>>\nendobj\n4 0 obj\n<<\n/Length 44\n>>\nstream\nBT\n72 720 Td\n/F0 12 Tf\n(Hello World) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \n0000000200 00000 n \ntrailer\n<<\n/Size 5\n/Root 1 0 R\n>>\nstartxref\n284\n%%EOF"
-    mock_pipeline.process_pdf.return_value = b"audio data"
+    mock_storage_service.download_file.return_value = b"%PDF"
+    mock_pipeline.process_pdf.return_value = ("audio_path", 0.05, {"chars": 1000, "tokens": 50})
     mock_storage_service.upload_file_data.return_value = "http://s3.com/audio.mp3"
 
     # Act
@@ -39,20 +39,22 @@ def test_process_pdf_task_success(
 
     # Assert
     assert result["status"] == "completed"
-    mock_job_service.update_job_status.assert_any_call(1, JobStatus.PROCESSING, 0)
-    mock_job_service.update_job_status.assert_any_call(1, JobStatus.COMPLETED, 100)
+    # final_cost = 0.05 + (50 / 1_000_000) * 2.0 = 0.0501
+    mock_job_service.update_job_status.assert_any_call(1, JobStatus.processing, 0)
+    mock_job_service.update_job_status.assert_any_call(1, JobStatus.completed, 100, estimated_cost=ANY, chars_processed=1000, tokens_used=50)
     mock_storage_service.download_file.assert_called_with("test.pdf")
     mock_pipeline.process_pdf.assert_called_once_with(
         pdf_path=ANY,
-        voice_provider="openai",
+        voice_provider=VoiceProvider.openai,
         voice_type="default",
         reading_speed=1.0,
         include_summary=False,
-        conversion_mode="full",
+        conversion_mode=ConversionMode.full,
         progress_callback=ANY,
+        work_dir=ANY
     )
-    mock_storage_service.upload_file_data.assert_called_with(
-        b"audio data", "audio/1/1.mp3", "audio/mpeg"
+    mock_storage_service.upload_large_file.assert_called_with(
+        "audio_path", "audio/1/1.mp3", "audio/mpeg"
     )
 
 
@@ -73,16 +75,16 @@ def test_process_pdf_task_success_summary_explanation(
     job = Job(
         id=2,
         pdf_s3_key="science.pdf",
-        voice_provider=VoiceProvider.OPENAI,
+        voice_provider=VoiceProvider.openai,
         voice_type="default",
         reading_speed=1.0,
         include_summary=False,
-        conversion_mode=ConversionMode.SUMMARY_EXPLANATION,
+        conversion_mode=ConversionMode.summary_explanation,
         user_id=1,
     )
     mock_db.query.return_value.filter.return_value.first.return_value = job
-    mock_storage_service.download_file.return_value = b"%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj\n2 0 obj\n<<\n/Type /Pages\n/Kids [3 0 R]\n/Count 1\n>>\nendobj\n3 0 obj\n<<\n/Type /Page\n/Parent 2 0 R\n/MediaBox [0 0 612 792]\n/Contents 4 0 R\n>>\nendobj\n4 0 obj\n<<\n/Length 44\n>>\nstream\nBT\n72 720 Td\n/F0 12 Tf\n(Hello World) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \n0000000200 00000 n \ntrailer\n<<\n/Size 5\n/Root 1 0 R\n>>\nstartxref\n284\n%%EOF"
-    mock_pipeline.process_pdf.return_value = b"summary audio data"
+    mock_storage_service.download_file.return_value = b"%PDF"
+    mock_pipeline.process_pdf.return_value = ("audio_path", 0.12, {"chars": 8000, "tokens": 500})
     mock_storage_service.upload_file_data.return_value = "http://s3.com/summary.mp3"
 
     # Act
@@ -90,20 +92,22 @@ def test_process_pdf_task_success_summary_explanation(
 
     # Assert
     assert result["status"] == "completed"
-    mock_job_service.update_job_status.assert_any_call(2, JobStatus.PROCESSING, 0)
-    mock_job_service.update_job_status.assert_any_call(2, JobStatus.COMPLETED, 100)
+    # final_cost = 0.12 + (500 / 1_000_000) * 2.0 = 0.121
+    mock_job_service.update_job_status.assert_any_call(2, JobStatus.processing, 0)
+    mock_job_service.update_job_status.assert_any_call(2, JobStatus.completed, 100, estimated_cost=ANY, chars_processed=8000, tokens_used=500)
     mock_storage_service.download_file.assert_called_with("science.pdf")
     mock_pipeline.process_pdf.assert_called_once_with(
         pdf_path=ANY,
-        voice_provider="openai",
+        voice_provider=VoiceProvider.openai,
         voice_type="default",
         reading_speed=1.0,
         include_summary=False,
-        conversion_mode="summary_explanation",
+        conversion_mode=ConversionMode.summary_explanation,
         progress_callback=ANY,
+        work_dir=ANY
     )
-    mock_storage_service.upload_file_data.assert_called_with(
-        b"summary audio data", "audio/1/2.mp3", "audio/mpeg"
+    mock_storage_service.upload_large_file.assert_called_with(
+        "audio_path", "audio/1/2.mp3", "audio/mpeg"
     )
 
 
@@ -123,14 +127,14 @@ def test_cleanup_old_files(MockSessionLocal, MockStorageService):
         id=1,
         pdf_s3_key="old.pdf",
         audio_s3_key="old.mp3",
-        status=JobStatus.COMPLETED,
+        status=JobStatus.completed,
         completed_at=datetime.now() - timedelta(days=31),
     )
     new_job = Job(
         id=2,
         pdf_s3_key="new.pdf",
         audio_s3_key="new.mp3",
-        status=JobStatus.COMPLETED,
+        status=JobStatus.completed,
         completed_at=datetime.now() - timedelta(days=1),
     )
     mock_db.query.return_value.filter.return_value.all.return_value = [old_job]

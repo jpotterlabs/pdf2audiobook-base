@@ -26,12 +26,8 @@ interface JobCardProps {
   onDelete: (jobId: number) => void
 }
 
-import { useUser } from "@clerk/nextjs"
-
 export function JobCard({ job, onDelete }: JobCardProps) {
-  const { user } = useUser()
-  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL
-  const isAdmin = adminEmail && user?.primaryEmailAddress?.emailAddress === adminEmail
+  const isAdmin = false // Admin check needs to be redesigned for base pipeline
 
   const [deleting, setDeleting] = useState(false)
   const [showPlayer, setShowPlayer] = useState(false)
@@ -119,7 +115,7 @@ export function JobCard({ job, onDelete }: JobCardProps) {
             <span className="font-medium">{job.reading_speed}x</span>
           </div>
 
-          {isAdmin && job.estimated_cost > 0 && (
+          {job.estimated_cost > 0 && (
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground flex items-center gap-1">
                 <DollarSign className="w-3 h-3" />

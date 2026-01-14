@@ -40,6 +40,7 @@ export enum ConversionMode {
   SUMMARY = 'summary',
   EXPLANATION = 'explanation',
   SUMMARY_EXPLANATION = 'summary_explanation',
+  FULL_EXPLANATION = 'full_explanation',
 }
 
 export interface Job {
@@ -59,6 +60,8 @@ export interface Job {
   reading_speed: number
   include_summary: boolean
   conversion_mode: ConversionMode
+  chars_processed: number
+  tokens_used: number
   created_at: string
   started_at: string | null
   completed_at: string | null

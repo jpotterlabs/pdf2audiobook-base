@@ -36,13 +36,35 @@ class TTSProvider(ABC):
 # --- CONCRETE TTS IMPLEMENTATIONS ---
 class OpenAITTS(TTSProvider):
     def __init__(self):
-        self.client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        self.voice_mapping = {"default": "alloy", "female": "nova", "male": "onyx"}
+        self.base_url = os.getenv("OPENAI_BASE_URL")
+        self.api_key = os.getenv("OPENAI_API_KEY")
+        self.client = openai.OpenAI(api_key=self.api_key, base_url=self.base_url)
+        
+        self.model = os.getenv("OPENAI_TTS_MODEL", "tts-1")
+        
+        if "kokoro" in self.model.lower():
+             default_voice = os.getenv("KOKORO_VOICE_DEFAULT", "af_sky+af_bella")
+             female_voice = os.getenv("KOKORO_VOICE_FEMALE", "af_bella")
+             male_voice = os.getenv("KOKORO_VOICE_MALE", "af_sky")
+             
+             self.voice_mapping = {
+                 "default": default_voice,
+                 "female": female_voice,
+                 "male": male_voice,
+                 "alloy": os.getenv("KOKORO_VOICE_ALLOY", default_voice),
+                 "echo": os.getenv("KOKORO_VOICE_ECHO", female_voice),
+                 "fable": os.getenv("KOKORO_VOICE_FABLE", male_voice),
+                 "onyx": os.getenv("KOKORO_VOICE_ONYX", male_voice),
+                 "nova": os.getenv("KOKORO_VOICE_NOVA", female_voice),
+                 "shimmer": os.getenv("KOKORO_VOICE_SHIMMER", default_voice)
+             }
+        else:
+             self.voice_mapping = {"default": "alloy", "female": "nova", "male": "onyx"}
 
     def text_to_audio(self, text: str, voice_id: str, speed: float) -> bytes:
-        voice = self.voice_mapping.get(voice_id, "alloy")
+        voice = self.voice_mapping.get(voice_id, self.voice_mapping.get("default"))
         response = self.client.audio.speech.create(
-            model="tts-1", voice=voice, input=text, speed=speed
+            model=self.model, voice=voice, input=text, speed=speed
         )
         return response.content
 
@@ -300,7 +322,7 @@ class PDFToAudioPipeline:
 
             # Calculate estimated cost
             estimated_cost = self._calculate_cost(
-                voice_provider, voice_type, final_text
+                voice_provider, voice_type, final_text, usage_stats["tokens"]
             )
 
             if progress_callback:
@@ -330,7 +352,25 @@ class PDFToAudioPipeline:
             tokens += t
             return content, tokens
         
-        # Mode is FULL or anything else
+        # Custom logic for "Full + Explanation" mode or standard Full
+        if mode == "full_explanation":
+             if progress_callback:
+                 progress_callback(25)
+             
+             # Generate explanation
+             explanation, t = self._generate_concept_explanation(cleaned_text)
+             tokens += t
+             
+             final_content = f"Concept Explanation:\n{explanation}\n\nFull Text:\n{cleaned_text}"
+
+             # Check if summary is ALSO requested
+             if include_summary:
+                 summary, t2 = self._generate_summary(cleaned_text)
+                 tokens += t2
+                 final_content = f"Summary:\n{summary}\n\n{final_content}"
+            
+             return final_content, tokens
+
         if include_summary:
             if progress_callback:
                 progress_callback(25)
@@ -340,22 +380,32 @@ class PDFToAudioPipeline:
             
         return cleaned_text, tokens
 
-    def _calculate_cost(self, provider: str, voice_type: str, text: str) -> float:
+    def _calculate_cost(self, provider: str, voice_type: str, text: str, tokens_used: int = 0) -> float:
         char_count = len(text)
         cost = 0.0
 
+        # TTS Cost
         if provider == "google":
             if "premium" in voice_type.lower():
-                cost = (char_count / 1_000_000) * settings.GOOGLE_TTS_COST_CHIRP
+                cost = (char_count / 1_000_000) * settings.GOOGLE_TTS_COST_PREMIUM
             else:
-                cost = (char_count / 1_000_000) * settings.GOOGLE_TTS_COST_WAVENET
+                cost = (char_count / 1_000_000) * settings.GOOGLE_TTS_COST_STANDARD
         elif provider == "openai":
-            # OpenAI is flat $15 per 1M characters for tts-1
-            cost = (char_count / 1_000_000) * 15.0
+            # Check if using local OpenAI-compatible endpoint (e.g. Kokoro)
+            base_url = os.getenv("OPENAI_BASE_URL", "").lower()
+            api_key = os.getenv("OPENAI_API_KEY", "")
+            
+            if "localhost" in base_url or "0.0.0.0" in base_url or api_key == "not-needed":
+                cost = 0.0
+            else:
+                # Actual OpenAI is flat $15 per 1M characters for tts-1
+                cost = (char_count / 1_000_000) * 15.0
         
-        # Add a placeholder for LLM cost (Summary/Explanation)
-        # Assuming Flash 2.0 is extremely cheap, we'll just add a tiny flat fee or ignore it for now
-        # until token counting is implemented.
+        # LLM Cost (Approximate using average of input/output rates)
+        if tokens_used > 0:
+            avg_llm_rate = (settings.LLM_COST_INPUT_PER_1K + settings.LLM_COST_OUTPUT_PER_1K) / 2
+            llm_cost = (tokens_used / 1000) * avg_llm_rate
+            cost += llm_cost
         
         return round(cost, 6)
 
@@ -406,13 +456,17 @@ class PDFToAudioPipeline:
         """Generate a concise summary of the text."""
         from loguru import logger
         try:
-            system_prompt = "Summarize the following text in about 150 words."
-            user_content = text[:20000] if len(text) > 20000 else text # Flash has large context
+            system_prompt = "Summarize the following text in about 300 words. fastidiously covering the entire document from start to finish. Do not just summarize the introduction."
+            # Dolphin Mistral 24B often has 32k context. 100k chars is ~25k tokens. Safe-ish.
+            limit = 100000 
+            user_content = text[:limit] if len(text) > limit else text
             
+            logger.info(f"📝 Generating summary for text of length {len(text)} (truncated to {len(user_content)})")
+
             summary, tokens = self._call_llm_with_retry(
                 system_prompt=system_prompt,
                 user_content=user_content,
-                max_tokens=600,
+                max_tokens=1000,
                 temperature=0.3
             )
             logger.info(f"✅ Summary generated: {len(summary)} chars, {tokens} tokens")
@@ -428,9 +482,14 @@ class PDFToAudioPipeline:
         from loguru import logger
         try:
             system_prompt = """Analyze the provided text and create a comprehensive explanation of its core concepts.
+                Crucially, you must cover the ENTIRE document from beginning to end. 
                 Focus on explaining key ideas, methodologies, findings, and conclusions in a narrative form suitable for audio conversion.
                 Make the explanation educational and accessible, as if teaching the concepts to someone new to the topic."""
-            user_content = text[:20000] if len(text) > 20000 else text
+            
+            limit = 100000
+            user_content = text[:limit] if len(text) > limit else text
+            
+            logger.info(f"📝 Generating explanation for text of length {len(text)} (truncated to {len(user_content)})")
 
             explanation, tokens = self._call_llm_with_retry(
                 system_prompt=system_prompt,

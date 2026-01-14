@@ -42,12 +42,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.className} dark antialiased`} suppressHydrationWarning>
-        <Providers publishableKey={publishableKey}>
+        <Providers>
           {children}
           <Toaster />
           <Analytics />

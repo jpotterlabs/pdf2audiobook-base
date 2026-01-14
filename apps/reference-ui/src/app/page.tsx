@@ -21,16 +21,16 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/upload"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold text-lg flex items-center justify-center space-x-2"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold text-lg flex items-center justify-center space-x-2 shadow-lg shadow-blue-200 transition-all hover:-translate-y-1"
               >
                 <Upload className="h-5 w-5" />
                 <span>Start Converting</span>
               </Link>
               <Link
-                href="/pricing"
-                className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-8 py-3 rounded-lg font-semibold text-lg"
+                href="/jobs"
+                className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-8 py-3 rounded-lg font-semibold text-lg transition-all hover:-translate-y-1"
               >
-                View Pricing
+                View My Jobs
               </Link>
             </div>
           </div>
