@@ -2,11 +2,12 @@ import os
 import sys
 
 # Setup path
-sys.path.append(os.path.join(os.getcwd(), "backend"))
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(SCRIPT_DIR, "backend"))
 
 # Load env variables explicitly because we are running disjointed
 from dotenv import load_dotenv
-load_dotenv(".env")
+load_dotenv(os.path.join(SCRIPT_DIR, ".env"))
 
 from worker.celery_app import celery_app
 from worker.tasks import process_pdf_task

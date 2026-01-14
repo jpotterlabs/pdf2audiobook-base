@@ -14,7 +14,7 @@ An open-source, self-hosted platform for converting PDF documents to high-qualit
 
 ## 🏗️ Architecture
 
-- **Frontend**: Next.js 14 (React) - Modern, responsive UI.
+- **Frontend**: Next.js 16.0.1 (React) - Modern, responsive UI.
 - **Backend**: FastAPI (Python) - High-performance API.
 - **Processing**: Celery + Redis - Robust asynchronous job queue.
 - **Storage**: S3-Compatible (MinIO, R2, AWS S3).

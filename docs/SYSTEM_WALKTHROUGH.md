@@ -29,7 +29,12 @@ To use the system, you must have three components running simultaneously:
 2. Drag and drop a PDF file (e.g., a research paper or a novel) into the drop zone.
 3. Configure your preferences:
     - **Voice**: Choose between available OpenAI or Google voices.
-    - **Mode**: Select "Summary" for quick insights or "Full Narration" for the complete text.
+    - **Mode**: Choose the conversion strategy:
+        - `full`: Complete narration of the document.
+        - `summary`: Concise executive summary.
+        - `explanation`: Educational breakdown of core concepts.
+        - `summary_explanation`: Both a summary and a concept explanation.
+        - `full_explanation`: The complete text preceded by a concept explanation.
 4. Click **Start Conversion**.
 
 ## 🔄 Step 3: Monitor Progress

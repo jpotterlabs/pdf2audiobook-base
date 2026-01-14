@@ -56,7 +56,10 @@ class Settings(BaseSettings):
             if isinstance(self.ALLOWED_HOSTS, list):
                 self.ALLOWED_HOSTS.append(self.FRONTEND_URL)
 
-        logger.info(f"Using Redis URL: {self.REDIS_URL}")
+        from urllib.parse import urlparse
+        parsed = urlparse(self.REDIS_URL)
+        masked_url = f"{parsed.scheme}://{parsed.hostname}:{parsed.port}{parsed.path}"
+        logger.info(f"Using Redis URL: {masked_url}")
 
         # Diagnostic logging for voice environment variables
         voice_vars = {k: v for k, v in os.environ.items() if k.startswith("GOOGLE_VOICE_")}

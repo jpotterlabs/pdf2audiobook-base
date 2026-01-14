@@ -45,7 +45,7 @@ graph TD
     - Providing Swagger UI documentation (at `/docs`).
 
 ### 2. Background Processing: Celery + Redis
-- **Broker**: Redis (`192.168.0.225:6379`).
+- **Broker**: Redis (${REDIS_URL:-localhost:6379}).
 - **Worker Logic**: Located in `worker/tasks.py`.
 - **Purpose**: Decouples long-running conversions from the web server, allowing for a responsive UI while processing happens in the background.
 
@@ -53,8 +53,9 @@ graph TD
 - **Orchestrator**: `PipelineService` (managed via `worker/tasks.py`).
 - **Features**:
     - **OCR**: Extracts text from standard and scanned PDFs.
-    - **Summarization**: Uses LLMs (OpenAI) to generate concise summaries.
-    - **TTS**: Converts text to natural-sounding speech (OpenAI/Google).
+    - **Summarization**: Uses LLMs (OpenAI, Google) or local OpenAI-compatible endpoints (e.g., Kokoro-FastAPI).
+    - **TTS**: Converts text to natural-sounding speech (OpenAI, Google, or local OpenAI-compatible endpoints).
+- **BYOK (Bring Your Own Key)**: Users can supply their own API keys for cloud providers or configure local endpoints for a completely private, cost-free setup.
 
 ## 📡 API Endpoints (v1)
 

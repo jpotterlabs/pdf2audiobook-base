@@ -24,8 +24,26 @@ redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 broker_url = os.getenv("CELERY_BROKER_URL", redis_url)
 result_backend = os.getenv("CELERY_RESULT_BACKEND", redis_url)
 
-logger.info(f"Connecting to Celery Broker: {broker_url}")
-logger.info(f"Using Result Backend: {result_backend}")
+def _redact_url(url: str) -> str:
+    from urllib.parse import urlparse
+    try:
+        parsed = urlparse(url)
+        if parsed.password:
+            # Reconstruct URL without password
+            netloc = parsed.hostname
+            if parsed.port:
+                netloc = f"{netloc}:{parsed.port}"
+            if parsed.username:
+                netloc = f"{parsed.username}:***@{netloc}"
+            else:
+                netloc = f"***@{netloc}"
+            return parsed._replace(netloc=netloc).geturl()
+        return url
+    except Exception:
+        return "<redacted>"
+
+logger.info(f"Connecting to Celery Broker: {_redact_url(broker_url)}")
+logger.info(f"Using Result Backend: {_redact_url(result_backend)}")
 
 celery_app = Celery(
     "pdf2audiobook_worker",

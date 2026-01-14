@@ -32,12 +32,20 @@ def run_test_journey():
     }
 
     try:
-        response = requests.post(f"{API_BASE_URL}/jobs", headers=headers, files=files, data=data)
+        response = requests.post(
+            f"{API_BASE_URL}/jobs", 
+            headers=headers, 
+            files=files, 
+            data=data,
+            timeout=(10, 300)
+        )
         response.raise_for_status()
-    except Exception as e:
-        print(f"❌ Upload failed: {e}")
-        if 'response' in locals():
-            print(f"Response: {response.text}")
+    except requests.HTTPError as e:
+        print(f"❌ Upload failed (HTTP Error): {e}")
+        print(f"Response: {getattr(e.response, 'text', 'No response body')}")
+        return
+    except requests.RequestException as e:
+        print(f"❌ Upload failed (Request Error): {e}")
         return
 
     job_data = response.json()
@@ -51,7 +59,11 @@ def run_test_journey():
     
     for i in range(max_retries):
         try:
-            status_resp = requests.get(f"{API_BASE_URL}/jobs/{job_id}", headers=headers)
+            status_resp = requests.get(
+                f"{API_BASE_URL}/jobs/{job_id}", 
+                headers=headers,
+                timeout=(10, 60)
+            )
             status_resp.raise_for_status()
             current_job = status_resp.json()
             status = current_job["status"]
@@ -70,8 +82,12 @@ def run_test_journey():
                 return
             
             time.sleep(delay)
-        except Exception as e:
-            print(f"⚠️ Polling error: {e}")
+        except requests.HTTPError as e:
+            print(f"⚠️ Polling error (HTTP Error): {e}")
+            print(f"Response: {getattr(e.response, 'text', 'No response body')}")
+            break
+        except requests.RequestException as e:
+            print(f"⚠️ Polling error (Request Error): {e}")
             break
             
     print("🕒 Polling timed out.")
