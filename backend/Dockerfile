@@ -42,7 +42,7 @@ COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy application code
-COPY --chown=appuser:appuser . .
+COPY --chown=appuser:appuser backend/ .
 
 # Create logs directory with proper permissions
 RUN mkdir -p logs && chown -R appuser:appuser logs

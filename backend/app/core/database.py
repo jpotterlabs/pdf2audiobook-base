@@ -5,13 +5,20 @@ from app.core.config import settings
 
 # Create engine only if DATABASE_URL is available
 if settings.DATABASE_URL:
-    engine = create_engine(
-        settings.DATABASE_URL,
-        pool_size=20,          # Max number of permanent connections in the pool
-        max_overflow=30,       # Max number of temporary connections allowed
-        pool_pre_ping=True,    # Check connection health before use
-        pool_recycle=3600      # Recycle connections every hour to prevent stale connections
-    )
+    connect_args = {}
+    if settings.DATABASE_URL.startswith("sqlite"):
+        # SQLite-specific arguments
+        connect_args = {"check_same_thread": False}
+        engine = create_engine(settings.DATABASE_URL, connect_args=connect_args)
+    else:
+        # Postgres or other engine settings
+        engine = create_engine(
+            settings.DATABASE_URL,
+            pool_size=20,
+            max_overflow=30,
+            pool_pre_ping=True,
+            pool_recycle=3600
+        )
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 else:
     # Placeholder for when DATABASE_URL is not available (e.g., during build)

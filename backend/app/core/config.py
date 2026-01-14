@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     S3_BUCKET_NAME: Optional[str] = None
 
     # Frontend URLs for CORS
-    FRONTEND_URL: str = "https://www.pdf2audiobook.xyz"
+    FRONTEND_URL: str = "http://localhost:3000"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

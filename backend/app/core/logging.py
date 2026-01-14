@@ -49,7 +49,7 @@ def setup_logging():
         "format": console_format,
         "level": settings.LOG_LEVEL.upper(),
         "serialize": settings.LOG_FORMAT.lower() == "json",
-        "colorize": not settings.is_production,  # Disable colors in production
+        "colorize": True,  # Always enable colors for the Core edition
     })
 
     # File handlers for production

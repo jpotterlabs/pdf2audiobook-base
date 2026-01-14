@@ -9,7 +9,7 @@ An open-source, self-hosted platform for converting PDF documents to high-qualit
 - **Smart Summarization**: Use any LLM (via OpenRouter) to generate executive summaries and concept explanations before listening.
 - **Multiple TTS Engines**:
   - **Local**: Run [Kokoro-FastAPI](https://github.com/remsky/kokoro-fastapi) or any OpenAI-compatible TTS locally.
-  - **remote**: Google Cloud TTS, OpenAI, AWS Polly, Azure, ElevenLabs.
+  - **Remote**: Google Cloud TTS, OpenAI, AWS Polly, Azure, ElevenLabs.
 - **Cost Tracking**: Estimate LLM and Cloud TTS costs (or $0.00 for local engines).
 
 ## 🏗️ Architecture
@@ -17,6 +17,7 @@ An open-source, self-hosted platform for converting PDF documents to high-qualit
 - **Frontend**: Next.js 16.0.1 (React) - Modern, responsive UI.
 - **Backend**: FastAPI (Python) - High-performance API.
 - **Processing**: Celery + Redis - Robust asynchronous job queue.
+- **Database**: SQLite - Lightweight, local-first data storage.
 - **Storage**: S3-Compatible (MinIO, R2, AWS S3).
 
 ## 🛠️ Quick Start
@@ -42,6 +43,26 @@ docker-compose up --build
 Access the application:
 - **UI**: [http://localhost:3000](http://localhost:3000)
 - **API Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+### 4. Local Development (Optional)
+If you prefer to run the backend outside of Docker:
+```bash
+# Using uv (Recommended)
+uv sync
+source .venv/bin/activate
+
+# Or using pip
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+For more details, see the **[Backend Guide](file:///home/jason/Projects/pdf2audiobook-base/docs/BACKEND.md)**.
+
+## 📖 Documentation
+
+For detailed guides on specific components, see:
+- **[Backend Guide](file:///home/jason/Projects/pdf2audiobook-base/docs/BACKEND.md)**: Architecture, endpoints, and troubleshooting.
+- **[Testing Guide](file:///home/jason/Projects/pdf2audiobook-base/MANUAL_TESTING_GUIDE.md)**: How to verify your setup manually.
 
 ## 🐳 Local TTS Setup (Recommended)
 To use high-quality neural TTS for free/offline:

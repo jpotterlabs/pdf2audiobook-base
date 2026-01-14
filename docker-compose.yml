@@ -4,8 +4,8 @@ services:
   # Production Backend API
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
       target: production
     ports:
       - "8000:8000"
@@ -15,8 +15,6 @@ services:
       - ENVIRONMENT=production
       - LOG_LEVEL=WARNING
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
     restart: unless-stopped
@@ -77,28 +75,6 @@ services:
     deploy:
       replicas: 2
 
-  # Production Database
-  db:
-    image: postgres:15
-    environment:
-      - POSTGRES_DB=pdf2audiobook
-      - POSTGRES_USER=${DB_USER:-pdfuser}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_INITDB_ARGS=--encoding=UTF-8
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./alembic:/docker-entrypoint-initdb.d
-    ports:
-      - "5432:5432"
-    restart: unless-stopped
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-pdfuser} -d pdf2audiobook" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    command: >
-      postgres -c max_connections=200 -c shared_buffers=256MB -c effective_cache_size=1GB -c maintenance_work_mem=64MB -c checkpoint_completion_target=0.9 -c wal_buffers=16MB -c default_statistics_target=100
-
   # Production Redis
   redis:
     image: redis:7-alpine
@@ -128,5 +104,4 @@ services:
       - monitoring
 
 volumes:
-  postgres_data:
   redis_data:

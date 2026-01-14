@@ -48,8 +48,8 @@ PDF Processing Pipeline
 ### Prerequisites
 ```bash
 # Required software
-Python 3.12+
-PostgreSQL 14+
+Python 3.11+
+SQLite (Default)
 Redis 6+
 Node.js 18+ (for frontend development)
 ```
@@ -58,7 +58,7 @@ Node.js 18+ (for frontend development)
 ```bash
 # Clone and setup
 git clone <repository>
-cd pdf2audiobook
+cd pdf2audiobook-base
 
 # Install Python dependencies
 uv sync
@@ -67,9 +67,8 @@ uv sync
 cp .env.example .env
 # Edit .env with your configuration
 
-# Setup database
-createdb pdf2audiobook
-alembic upgrade head
+# Run migrations
+./run-migrations.sh
 
 # Start Redis
 redis-server
@@ -79,8 +78,8 @@ cd backend
 uvicorn main:app --reload
 
 # Start worker (terminal 2)
-cd worker
-celery -A celery_app worker --loglevel=info
+# Ensure you are in the root directory
+celery -A worker.celery_app worker --loglevel=info
 ```
 
 ### Environment Variables
@@ -88,25 +87,7 @@ celery -A celery_app worker --loglevel=info
 # Core settings
 DEBUG=True
 SECRET_KEY=your-secret-key-here
-DATABASE_URL=postgresql://user:password@localhost/pdf2audiobook
-
-# Redis/Celery
-REDIS_URL=redis://localhost:6379/0
-CELERY_BROKER_URL=redis://localhost:6379/0
-CELERY_RESULT_BACKEND=redis://localhost:6379/0
-
-# AWS S3
-AWS_ACCESS_KEY_ID=your-aws-access-key
-AWS_SECRET_ACCESS_KEY=your-aws-secret-key
-S3_BUCKET_NAME=pdf2audiobook-uploads
-
-# Authentication
-CLERK_PEM_PUBLIC_KEY=your-clerk-public-key
-
-# Payments
-PADDLE_VENDOR_ID=your-vendor-id
-PADDLE_VENDOR_AUTH_CODE=your-vendor-auth-code
-PADDLE_PUBLIC_KEY=your-paddle-public-key
+DATABASE_URL=sqlite:///./dev.db
 
 # OpenAI (TTS + Summary)
 OPENAI_API_KEY=your-openai-api-key

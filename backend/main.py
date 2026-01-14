@@ -45,12 +45,12 @@ except (ValueError, AttributeError) as e:
     pass
 
 app = FastAPI(
-    title=settings.PROJECT_NAME,
+    title="PDF2AudioBook Core API",
     version=settings.PROJECT_VERSION,
     description="""
-    PDF2Audiobook SaaS Platform API
+    PDF2AudioBook Core API
 
-    A comprehensive API for converting PDF documents into high-quality audiobooks using advanced text-to-speech technology.
+    An open-source, self-hosted platform for converting PDF documents into high-quality audiobooks using advanced text-to-speech technology.
 
     ## Features
 
@@ -77,11 +77,11 @@ app = FastAPI(
     """,
     debug=settings.DEBUG,
     contact={
-        "name": "PDF2Audiobook Support",
-        "email": "support@pdf2audiobook.com",
+        "name": "PDF2AudioBook Open Source",
+        "url": "https://github.com/jpotterlabs/pdf2audiobook-base",
     },
     license_info={
-        "name": "Proprietary",
+        "name": "MIT License",
     },
     docs_url="/docs",
     redoc_url="/redoc",

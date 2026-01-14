@@ -1,6 +1,6 @@
-# PDF2AudioBook Frontend
+# PDF2AudioBook Frontend (Reference UI)
 
-This is the frontend for the PDF2AudioBook SaaS platform.
+This is the reference frontend for the PDF2AudioBook Open Source Core. It provides a simple, functional interface for uploading PDFs and managing conversion jobs.
 
 ## Getting Started
 
@@ -20,20 +20,11 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## Environment Variables
 
-Create a `.env.local` file in the root of the `frontend` directory and add the following environment variables:
+Create a `.env.local` file in the root of the `apps/reference-ui` directory and add the following environment variables:
 
 ```
-# Point to your deployed backend (Render)
-NEXT_PUBLIC_API_URL=https://pdf2audiobook.xyz
-
-# Clerk (already configured in the shared pdf2audiobook.env used by Render)
-# For local development, copy the relevant values:
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-CLERK_SECRET_KEY=sk_test_...
-
-# Optional: enable local/dev testing mode to bypass payment gating
-# (Frontend will treat this as a flag to show and test all payment flows without real charges)
-NEXT_PUBLIC_DEV_BYPASS_PAYMENTS=true
+# Point to your backend API
+NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
-The frontend will automatically route requests to the versioned API (`/api/v1`) under `NEXT_PUBLIC_API_URL`, so you should provide the base domain only (e.g. `https://pdf2audiobook.xyz` or your local `http://localhost:8000`).
+The frontend will automatically route requests to the versioned API (`/api/v1`) under `NEXT_PUBLIC_API_URL`.

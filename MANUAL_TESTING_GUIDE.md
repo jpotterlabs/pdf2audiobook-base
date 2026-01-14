@@ -41,7 +41,7 @@ This series of `curl` commands simulates the entire lifecycle of a job, which is
 
 ### Prerequisites
 
--   A valid JWT for an authenticated user. Since this project uses Clerk for authentication, you would typically get this token from your frontend after a user logs in. For this guide, we will use a placeholder `DUMMY_JWT`.
+-   A valid auth token for an authenticated user. Since the Core edition uses a simplified mock authentication, you can use any string (e.g., `base-token`).
 -   The `jq` command-line tool is used to extract the `job_id` from the response. You can install it or manually copy the ID.
 
 ### Step 1: Create a New Job
@@ -49,12 +49,12 @@ This series of `curl` commands simulates the entire lifecycle of a job, which is
 This command uploads a PDF (`dummy.pdf`) and creates a new job record. The job will have a `pending` status.
 
 ```bash
-# Replace DUMMY_JWT with your actual JWT
-export JWT="DUMMY_JWT"
+# Use the default auth token defined in the Core edition
+export AUTH_TOKEN="base-token"
 
 # Submit the PDF to create the job
 curl -X POST "http://localhost:8000/api/v1/jobs/" \
-  -H "Authorization: Bearer $JWT" \
+  -H "Authorization: Bearer $AUTH_TOKEN" \
   -F "file=@dummy.pdf" \
   -F "voice_provider=openai" \
   -F "voice_type=nova"
@@ -96,7 +96,7 @@ export JOB_ID=1
 
 # Update the job status to processing
 curl -X PATCH "http://localhost:8000/api/v1/jobs/$JOB_ID" \
-  -H "Authorization: Bearer $JWT" \
+  -H "Authorization: Bearer $AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "status": "processing",
@@ -127,7 +127,7 @@ Finally, let's retrieve the job details to confirm that it has been fully update
 ```bash
 # Get the final job details
 curl -X GET "http://localhost:8000/api/v1/jobs/$JOB_ID" \
-  -H "Authorization: Bearer $JWT"
+  -H "Authorization: Bearer $AUTH_TOKEN"
 ```
 
 **Expected Response:**

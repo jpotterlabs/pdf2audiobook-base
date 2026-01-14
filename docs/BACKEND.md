@@ -70,10 +70,19 @@ graph TD
 ## 🛠 Operation & Troubleshooting
 
 ### Local Development Setup
-1. **Virtual Environment**: Use the provided `.venv`.
+1. **Virtual Environment**: Create and activate a Python 3.11+ virtual environment.
+   
+   **Using `uv` (Recommended)**:
    ```bash
-   # Activate (Linux)
+   uv sync
    source .venv/bin/activate
+   ```
+   
+   **Using `pip`**:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
    ```
 2. **Start Backend**:
    ```bash
