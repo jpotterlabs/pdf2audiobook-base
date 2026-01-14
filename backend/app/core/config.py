@@ -58,7 +58,8 @@ class Settings(BaseSettings):
 
         from urllib.parse import urlparse
         parsed = urlparse(self.REDIS_URL)
-        masked_url = f"{parsed.scheme}://{parsed.hostname}:{parsed.port}{parsed.path}"
+        port_segment = f":{parsed.port}" if parsed.port is not None else ""
+        masked_url = f"{parsed.scheme}://{parsed.hostname}{port_segment}{parsed.path}"
         logger.info(f"Using Redis URL: {masked_url}")
 
         # Diagnostic logging for voice environment variables
@@ -80,9 +81,9 @@ class Settings(BaseSettings):
     OPENAI_TTS_MODEL: str = "tts-1"
     
     model_config = SettingsConfigDict(
-        env_file=(".env", "copy.env.antigravity"), 
+        env_file=(".env",), 
         extra="ignore",
-        case_sensitive=False
+        case_sensitive=True
     )
 
     # Google TTS Voices

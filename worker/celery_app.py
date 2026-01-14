@@ -14,8 +14,6 @@ try:
     # Look for .env in both root and backend
     load_dotenv(os.path.join(backend_dir, ".env"))
     load_dotenv(os.path.join(backend_dir, "..", ".env"))
-    # Also support the temporary file the user created for testing
-    load_dotenv(os.path.join(backend_dir, "copy.env.antigravity"))
 except ImportError:
     pass
 
