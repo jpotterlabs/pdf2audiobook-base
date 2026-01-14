@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { useCredits } from "@/lib/contexts/credits-context"
 import { api, APIError } from "@/lib/api/client"
 import { VOICE_OPTIONS } from "@/lib/constants/voices"
 import type { VoiceProvider, ConversionMode } from "@/lib/api/types"
@@ -32,7 +31,6 @@ type UploadFormValues = z.infer<typeof uploadSchema>
 
 export function UploadForm() {
   const router = useRouter()
-  const { refreshCredits } = useCredits()
   const [uploading, setUploading] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
@@ -71,7 +69,6 @@ export function UploadForm() {
 
       await api.jobs.create(formData)
 
-      await refreshCredits()
       toast.success("Job created successfully!")
       router.push("/jobs")
     } catch (error) {

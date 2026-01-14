@@ -53,6 +53,6 @@ Once the status changes to **"Completed"**:
 ## 🛠 Advanced: Testing via Script
 If you prefer the command line, you can run the integrated journey script to verify the entire backend/worker pipeline without the UI:
 ```bash
-python backend/test_journey.py
+python test_journey.py
 ```
 This script will mock a file upload, track the job status to completion, and print the results to your terminal.

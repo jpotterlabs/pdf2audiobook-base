@@ -10,9 +10,9 @@ from app.services.user import UserService
 
 security = HTTPBearer()
 
-def verify_clerk_token(token: str) -> dict:
+def get_mock_user(_token: str) -> dict:
     """
-    Mocked verification for base pipeline.
+    Intentionally returns mock data for dev/OSS use.
     """
     return {
         "email": "base@example.com",
@@ -35,9 +35,3 @@ def get_current_user(
     }
     user = user_service.get_or_create_user(user_data)
     return user
-
-def get_optional_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    db: Session = Depends(get_db)
-) -> Optional[User]:
-    return get_current_user(credentials, db)

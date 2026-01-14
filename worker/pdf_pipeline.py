@@ -354,22 +354,22 @@ class PDFToAudioPipeline:
         
         # Custom logic for "Full + Explanation" mode or standard Full
         if mode == "full_explanation":
-             if progress_callback:
-                 progress_callback(25)
-             
-             # Generate explanation
-             explanation, t = self._generate_concept_explanation(cleaned_text)
-             tokens += t
-             
-             final_content = f"Concept Explanation:\n{explanation}\n\nFull Text:\n{cleaned_text}"
-
-             # Check if summary is ALSO requested
-             if include_summary:
-                 summary, t2 = self._generate_summary(cleaned_text)
-                 tokens += t2
-                 final_content = f"Summary:\n{summary}\n\n{final_content}"
+            if progress_callback:
+                progress_callback(25)
             
-             return final_content, tokens
+            # Generate explanation
+            explanation, t = self._generate_concept_explanation(cleaned_text)
+            tokens += t
+            
+            final_content = f"Concept Explanation:\n{explanation}\n\nFull Text:\n{cleaned_text}"
+
+            # Check if summary is ALSO requested
+            if include_summary:
+                summary, t2 = self._generate_summary(cleaned_text)
+                tokens += t2
+                final_content = f"Summary:\n{summary}\n\n{final_content}"
+           
+            return final_content, tokens
 
         if include_summary:
             if progress_callback:

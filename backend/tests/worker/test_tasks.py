@@ -32,7 +32,7 @@ def test_process_pdf_task_success(
     mock_db.query.return_value.filter.return_value.first.return_value = job
     mock_storage_service.download_file.return_value = b"%PDF"
     mock_pipeline.process_pdf.return_value = ("audio_path", 0.05, {"chars": 1000, "tokens": 50})
-    mock_storage_service.upload_file_data.return_value = "http://s3.com/audio.mp3"
+    mock_storage_service.upload_large_file.return_value = "http://s3.com/audio.mp3"
 
     # Act
     result = process_pdf_task(1)
@@ -85,7 +85,7 @@ def test_process_pdf_task_success_summary_explanation(
     mock_db.query.return_value.filter.return_value.first.return_value = job
     mock_storage_service.download_file.return_value = b"%PDF"
     mock_pipeline.process_pdf.return_value = ("audio_path", 0.12, {"chars": 8000, "tokens": 500})
-    mock_storage_service.upload_file_data.return_value = "http://s3.com/summary.mp3"
+    mock_storage_service.upload_large_file.return_value = "http://s3.com/summary.mp3"
 
     # Act
     result = process_pdf_task(2)

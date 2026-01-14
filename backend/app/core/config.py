@@ -91,10 +91,10 @@ class Settings(BaseSettings):
     GOOGLE_VOICE_US_MALE_STD: str = "en-US-Wavenet-I"
     GOOGLE_VOICE_GB_FEMALE_STD: str = "en-GB-Wavenet-F"
     GOOGLE_VOICE_GB_MALE_STD: str = "en-GB-Wavenet-O"
-    GOOGLE_VOICE_US_FEMALE_PREMIUM: str = ""
-    GOOGLE_VOICE_US_MALE_PREMIUM: str = ""
-    GOOGLE_VOICE_GB_FEMALE_PREMIUM: str = ""
-    GOOGLE_VOICE_GB_MALE_PREMIUM: str = ""
+    GOOGLE_VOICE_US_FEMALE_PREMIUM: str = "en-US-Studio-O"
+    GOOGLE_VOICE_US_MALE_PREMIUM: str = "en-US-Studio-Q"
+    GOOGLE_VOICE_GB_FEMALE_PREMIUM: str = "en-GB-Studio-C"
+    GOOGLE_VOICE_GB_MALE_PREMIUM: str = "en-GB-Studio-B"
 
     # Google TTS Costs (per 1M characters)
     GOOGLE_TTS_COST_STANDARD: float = 4.0
