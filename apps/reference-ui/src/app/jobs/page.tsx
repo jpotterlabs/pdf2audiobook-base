@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { getJobs, deleteJob, cleanupFailedJobs } from '../../lib/api'
 import { Job } from '../../lib/types'
 import Link from 'next/link'
+import { FileText, Upload, History } from 'lucide-react'
 
 export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([])
@@ -50,7 +51,8 @@ export default function JobsPage() {
     setIsDeleting(true)
     try {
       const result = await cleanupFailedJobs()
-      alert(result.message)
+      const message = result?.message || 'Jobs cleaned up successfully.'
+      alert(message)
       await fetchJobs() // Refresh list
     } catch (error) {
       console.error('Failed to cleanup jobs:', error)

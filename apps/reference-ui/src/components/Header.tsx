@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { FileText, Upload, History, CreditCard } from 'lucide-react'
+import { FileText, Upload, History } from 'lucide-react'
 
 export default function Header() {
   return (

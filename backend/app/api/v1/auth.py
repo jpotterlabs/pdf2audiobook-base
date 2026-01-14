@@ -4,7 +4,7 @@ from typing import List
 
 from app.core.database import get_db
 from app.schemas import User, UserCreate, UserUpdate
-from app.services.auth import get_current_user, verify_clerk_token
+from app.services.auth import get_current_user, get_mock_user
 from app.services.user import UserService
 
 router = APIRouter()
@@ -59,7 +59,7 @@ async def verify_token(
     - **token**: The JWT token provided by the frontend after authentication (sent in JSON body).
     """
     try:
-        user_data = verify_clerk_token(token)
+        user_data = get_mock_user(token)
         user_service = UserService(db)
         user = user_service.get_or_create_user(user_data)
         return {"user": user}

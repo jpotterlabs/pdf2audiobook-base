@@ -9,9 +9,10 @@ from app.core.database import engine
 from app.models import Job, User, Base
 
 def recreate_db():
-    print(f"Creating database tables using engine: {engine.url}...")
+    safe_url = engine.url.render_as_string(hide_password=True)
+    print(f"Creating database tables using engine: {safe_url}...")
     # Explicitly verify we are writing to dev.db in CWD
-    if 'sqlite' in str(engine.url) and 'dev.db' in str(engine.url):
+    if 'sqlite' in engine.url.drivername and 'dev.db' in safe_url:
         print(f"Working directory: {os.getcwd()}")
         if os.path.exists("dev.db"):
             print("Removing existing dev.db to start fresh...")

@@ -6,6 +6,7 @@ const defaultUrl = "http://localhost:8000"
 let finalUrl = rawUrl || defaultUrl
 
 const API_BASE_URL = finalUrl
+const DEFAULT_AUTH_TOKEN = "base-token"
 
 interface ApiError {
   detail?: string | Array<{ msg: string }>
@@ -24,8 +25,8 @@ export class APIError extends Error {
 }
 
 async function fetchWithAuth(endpoint: string, options: RequestInit = {}, token?: string): Promise<Response> {
-  const headers: HeadersInit = {
-    ...options.headers,
+  const headers: Record<string, string> = {
+    ...options.headers as Record<string, string>,
   }
 
   if (token) {
@@ -59,7 +60,7 @@ export const api = {
   // Auth endpoints (Simplified)
   auth: {
     getMe: async (token?: string) => {
-      const response = await fetchWithAuth("/api/v1/auth/me", { method: "GET" }, token || "base-token")
+      const response = await fetchWithAuth("/api/v1/auth/me", { method: "GET" }, token || DEFAULT_AUTH_TOKEN)
       return response.json()
     },
   },
@@ -73,32 +74,32 @@ export const api = {
           method: "POST",
           body: jobData,
         },
-        token || "base-token",
+        token || DEFAULT_AUTH_TOKEN,
       )
       return response.json()
     },
 
     list: async (skip = 0, limit = 50, token?: string) => {
-      const response = await fetchWithAuth(`/api/v1/jobs/?skip=${skip}&limit=${limit}`, { method: "GET" }, token || "base-token")
+      const response = await fetchWithAuth(`/api/v1/jobs/?skip=${skip}&limit=${limit}`, { method: "GET" }, token || DEFAULT_AUTH_TOKEN)
       return response.json()
     },
 
     get: async (jobId: number, token?: string) => {
-      const response = await fetchWithAuth(`/api/v1/jobs/${jobId}`, { method: "GET" }, token || "base-token")
+      const response = await fetchWithAuth(`/api/v1/jobs/${jobId}`, { method: "GET" }, token || DEFAULT_AUTH_TOKEN)
       return response.json()
     },
 
     getStatus: async (jobId: number, token?: string) => {
-      const response = await fetchWithAuth(`/api/v1/jobs/${jobId}/status`, { method: "GET" }, token || "base-token")
+      const response = await fetchWithAuth(`/api/v1/jobs/${jobId}/status`, { method: "GET" }, token || DEFAULT_AUTH_TOKEN)
       return response.json()
     },
 
     delete: async (jobId: number, token?: string) => {
-      await fetchWithAuth(`/api/v1/jobs/${jobId}`, { method: "DELETE" }, token || "base-token")
+      await fetchWithAuth(`/api/v1/jobs/${jobId}`, { method: "DELETE" }, token || DEFAULT_AUTH_TOKEN)
     },
 
     cleanup: async (token?: string) => {
-      const response = await fetchWithAuth("/api/v1/jobs/cleanup", { method: "DELETE" }, token || "base-token")
+      const response = await fetchWithAuth("/api/v1/jobs/cleanup", { method: "DELETE" }, token || DEFAULT_AUTH_TOKEN)
       return response.json()
     },
   },

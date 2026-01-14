@@ -1,7 +1,7 @@
 import os
 import redis
 
-redis_url = "redis://192.168.0.225:6379/0"
+redis_url = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
 try:
     r = redis.from_url(redis_url)
     # Check connection

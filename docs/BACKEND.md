@@ -86,8 +86,10 @@ graph TD
    ```
 
 ### Common Issues
-- **"Port already in use"**: The web server didn't shut down properly. Run:
-  `fuser -k 8000/tcp`
+- **"Port already in use"**: The web server didn't shut down properly.
+  - **Linux**: `fuser -k 8000/tcp`
+  - **macOS**: `lsof -i :8000 | awk 'NR!=1 {print $2}' | xargs kill`
+  - **Windows**: `netstat -ano | findstr :8000` (then `taskkill /PID <pid> /F`) or PowerShell `Get-Process -Id (Get-NetTCPConnection -LocalPort 8000).OwningProcess | Stop-Process`
 - **Worker not picking up tasks**: Check if the Redis broker is reachable. The worker logs will show "Connecting to Celery Broker".
 - **Database Errors**: Ensure `test.db` exists or is properly initialized via migrations.
 
