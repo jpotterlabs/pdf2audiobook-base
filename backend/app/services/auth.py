@@ -31,7 +31,8 @@ def get_current_user(
     user_data = {
         "email": "base@example.com",
         "first_name": "Base",
-        "last_name": "User"
+        "last_name": "User",
+        "auth_provider_id": "local"
     }
     user = user_service.get_or_create_user(user_data)
     return user

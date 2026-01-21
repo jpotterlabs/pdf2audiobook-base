@@ -63,10 +63,19 @@ class OpenAITTS(TTSProvider):
 
     def text_to_audio(self, text: str, voice_id: str, speed: float) -> bytes:
         voice = self.voice_mapping.get(voice_id, self.voice_mapping.get("default"))
-        response = self.client.audio.speech.create(
-            model=self.model, voice=voice, input=text, speed=speed
-        )
-        return response.content
+        try:
+            with self.client.audio.speech.with_streaming_response.create(
+                model=self.model, voice=voice, input=text, speed=speed
+            ) as response:
+                return response.read()
+        except Exception as e:
+            # Fallback to standard if streaming fails (though streaming is preferred)
+            from loguru import logger
+            logger.warning(f"Streaming TTS failed, falling back to standard: {e}")
+            response = self.client.audio.speech.create(
+                model=self.model, voice=voice, input=text, speed=speed
+            )
+            return response.content
 
 
 class GoogleTTS(TTSProvider):
@@ -272,8 +281,10 @@ class PDFToAudioPipeline:
             
             # Process chunks and save to disk immediately
             char_count = 0
+            import time
             for i, chunk in enumerate(chunks):
                 progress = 40 + int((i / len(chunks)) * 55)
+                logger.info(f"Processing chunk {i+1}/{len(chunks)} - Progress: {progress}%")
                 if progress_callback:
                     progress_callback(progress)
                 
@@ -288,6 +299,9 @@ class PDFToAudioPipeline:
                     f.write(audio_data)
                 
                 chunk_files.append(chunk_path)
+                
+                # Add a small delay to prevent overloading the local TTS server (which caused a crash)
+                time.sleep(1.0)
             
             usage_stats["chars"] = char_count
 
@@ -506,7 +520,7 @@ class PDFToAudioPipeline:
             # Fallback: generate a basic summary-style explanation
             return f"This document explores key concepts and ideas. {text[:1000]}... The main themes and conclusions are presented in a structured format suitable for understanding the core content.", 0
 
-    def _call_llm_with_retry(self, system_prompt: str, user_content: str, max_tokens: int, temperature: float, max_retries: int = 5) -> tuple[str, int]:
+    def _call_llm_with_retry(self, system_prompt: str, user_content: str, max_tokens: int, temperature: float, max_retries: int = 2) -> tuple[str, int]:
         """Call LLM with exponential backoff to handle rate limits."""
         import time
         from loguru import logger
@@ -541,9 +555,18 @@ class PDFToAudioPipeline:
                     max_tokens=max_tokens,
                     temperature=temperature,
                 )
+                
+                if not response or not response.choices:
+                     raise ValueError("LLM returned empty response or no choices")
+
                 tokens = response.usage.total_tokens if response.usage else 0
                 return response.choices[0].message.content.strip(), tokens
             except Exception as e:
+                # Immediate fail for 401/402 (Auth/Payment issues)
+                if "401" in str(e) or "402" in str(e) or "unauthorized" in str(e).lower() or "payment" in str(e).lower():
+                    logger.error(f"❌ LLM Auth/Payment Error (No Retry): {e}")
+                    raise e
+
                 # Check for 429 Rate Limit
                 if "429" in str(e) or "rate limit" in str(e).lower():
                     wait_time = (2 ** i) + (random.random() * i)

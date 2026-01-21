@@ -34,7 +34,8 @@ class UserService:
         user = User(
             email=user_data["email"],
             first_name=user_data.get("first_name"),
-            last_name=user_data.get("last_name")
+            last_name=user_data.get("last_name"),
+            auth_provider_id=user_data.get("auth_provider_id")
         )
         
         self.db.add(user)

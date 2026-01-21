@@ -1,11 +1,22 @@
 import os
+import sys
+from pathlib import Path
 from sqlalchemy import create_engine, text
 
-# Force SQLite connection string
-db_url = "sqlite:///./backend/dev.db"
-engine = create_engine(db_url)
+# Resolve paths
+SCRIPT_DIR = Path(__file__).resolve().parent
+BACKEND_DIR = SCRIPT_DIR.parent
+
+# Ensure backend matches where dev.db is expected to be
+db_path = BACKEND_DIR / "dev.db"
+db_url = f"sqlite:///{db_path}"
 
 print(f"Connecting to: {db_url}")
+
+# Verify file exists first (optional depending on use case, but WAL is usually for existing DB)
+# But sqlalchemy creates it if not exists.
+
+engine = create_engine(db_url)
 
 try:
     with engine.connect() as conn:
@@ -24,3 +35,4 @@ try:
 
 except Exception as e:
     print(f"Error: {e}")
+

@@ -1,4 +1,8 @@
+import sys
 import os
+# Ensure the current directory is in sys.path so 'app' module can be found
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 import time
 
 import boto3
@@ -164,17 +168,10 @@ else:
     allowed_origins = []
 
 # Add development defaults if not in production
-if not settings.is_production:
-    dev_origins = [
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:8000",
-        "http://192.168.0.177:3000",  # Allow specific LAN IP
-    ]
-    for origin in dev_origins:
-        if origin not in allowed_origins:
-            allowed_origins.append(origin)
+# Add development defaults if not in production
+# Add development defaults if not in production and no other origins configured
+if not settings.is_production and not allowed_origins:
+    allowed_origins = ["*"]
 
 logger.info(
     f"CORS_ALLOW_ORIGINS={os.getenv('CORS_ALLOW_ORIGINS')!r}, "
